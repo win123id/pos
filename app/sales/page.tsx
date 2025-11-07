@@ -45,49 +45,88 @@ export default function SalesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [totalSales, setTotalSales] = useState<number>(0);
 
   useEffect(() => {
     fetchSales();
-  }, [currentPage]);
+  }, [currentPage, selectedMonth, selectedYear]);
 
   const fetchSales = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Get total count
-      const { count } = await supabase
-        .from('sales')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch paginated sales with customer information and items
-      const { data, error } = await supabase
-        .from('sales')
-        .select(`
+      // Build query with filters
+      let query = supabase.from('sales').select(`
+        id,
+        total_price,
+        created_at,
+        customer_id,
+        customers(name, email, phone),
+        sale_items(
           id,
-          total_price,
-          created_at,
-          customer_id,
-          customers(name, email, phone),
-          sale_items(
-            id,
-            product_id,
-            quantity,
-            width,
-            height,
-            description,
-            item_total,
-            products(name, type, price_per_unit)
-          )
-        `)
+          product_id,
+          quantity,
+          width,
+          height,
+          description,
+          item_total,
+          products(name, type, price_per_unit)
+        )
+      `, { count: 'exact' });
+
+      // Apply date filters
+      if (selectedYear && selectedMonth) {
+        const startDate = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1, 1);
+        const endDate = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0, 23, 59, 59);
+        
+        query = query
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+      } else if (selectedYear) {
+        const startDate = new Date(parseInt(selectedYear), 0, 1);
+        const endDate = new Date(parseInt(selectedYear), 11, 31, 23, 59, 59);
+        
+        query = query
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+      }
+
+      // Get filtered data
+      const { data, error, count } = await query
         .order('created_at', { ascending: false })
         .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
       if (error) throw error;
       
+      // Calculate total sales for the filtered period
+      let totalQuery = supabase.from('sales').select('total_price');
+      
+      if (selectedYear && selectedMonth) {
+        const startDate = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1, 1);
+        const endDate = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0, 23, 59, 59);
+        
+        totalQuery = totalQuery
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+      } else if (selectedYear) {
+        const startDate = new Date(parseInt(selectedYear), 0, 1);
+        const endDate = new Date(parseInt(selectedYear), 11, 31, 23, 59, 59);
+        
+        totalQuery = totalQuery
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+      }
+
+      const { data: totalData } = await totalQuery;
+      const total = totalData?.reduce((sum, sale) => sum + parseFloat(sale.total_price), 0) || 0;
+      
       // Two-step type assertion to handle the type mismatch
       setSales((data || []) as unknown as Sale[]);
       setTotalCount(count || 0);
+      setTotalSales(total);
     } catch (error: any) {
       setError(error.message || 'Failed to fetch sales');
     } finally {
@@ -158,6 +197,74 @@ export default function SalesPage() {
           <Plus className="h-4 w-4" />
           New Sale
         </Link>
+      </div>
+
+      {/* Filters and Total Sales */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-muted-foreground">Year</label>
+            <select
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setCurrentPage(1); // Reset to first page when filter changes
+              }}
+              className="px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">All Years</option>
+              {Array.from({ length: 5 }, (_, i) => {
+                const year = new Date().getFullYear() - i;
+                return (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-muted-foreground">Month</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setCurrentPage(1); // Reset to first page when filter changes
+              }}
+              disabled={!selectedYear}
+              className="px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            >
+              <option value="">All Months</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
+          <div className="text-sm text-muted-foreground">Total Sales</div>
+          <div className="text-xl font-bold text-primary">
+            {formatRupiah(totalSales)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {selectedYear && selectedMonth 
+              ? `For ${new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
+              : selectedYear 
+              ? `For ${selectedYear}`
+              : 'All Time'}
+          </div>
+        </div>
       </div>
 
       {error && (
