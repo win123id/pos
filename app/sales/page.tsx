@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
-import { Plus, Eye, Calendar, User, ShoppingCart, Edit, Trash2 } from "lucide-react";
+import { Plus, Eye, Calendar, User, ShoppingCart, Edit, Trash2, Download } from "lucide-react";
 import Link from "next/link";
 import { Pagination } from "@/components/ui/pagination";
 import { Header } from "@/components/layout/header";
@@ -18,6 +18,21 @@ interface Sale {
     email?: string;
     phone?: string;
   } | null;
+  sale_items?: {
+    id: number;
+    product_id: number;
+    product: {
+      id: number;
+      name: string;
+      type: 'size' | 'quantity';
+      price_per_unit: number;
+    };
+    quantity?: number;
+    width?: number;
+    height?: number;
+    description: string;
+    item_total: number;
+  }[];
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -45,7 +60,7 @@ export default function SalesPage() {
         .from('sales')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch paginated sales with customer information
+      // Fetch paginated sales with customer information and items
       const { data, error } = await supabase
         .from('sales')
         .select(`
@@ -53,7 +68,17 @@ export default function SalesPage() {
           total_price,
           created_at,
           customer_id,
-          customers(name, email, phone)
+          customers(name, email, phone),
+          sale_items(
+            id,
+            product_id,
+            quantity,
+            width,
+            height,
+            description,
+            item_total,
+            products(name, type, price_per_unit)
+          )
         `)
         .order('created_at', { ascending: false })
         .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
@@ -98,6 +123,19 @@ export default function SalesPage() {
       await fetchSales();
     } catch (error: any) {
       setError(error.message || 'Failed to delete sale');
+    }
+  };
+
+  const handleGeneratePDF = async (sale: Sale) => {
+    try {
+      // Import the PDF generation function
+      const { generateSalePDF } = await import('@/lib/currency');
+      
+      // Generate and download the PDF
+      await generateSalePDF(sale);
+    } catch (error: any) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
     }
   };
 
@@ -194,6 +232,13 @@ export default function SalesPage() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Link>
+                              <button
+                                onClick={() => handleGeneratePDF(sale)}
+                                className="inline-flex items-center justify-center rounded-lg border border-input bg-background p-2 hover:bg-accent hover:text-accent-foreground transition-colors"
+                                title="Download PDF"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
                               <button
                                 onClick={() => handleDeleteSale(sale.id)}
                                 className="inline-flex items-center justify-center rounded-lg border border-input bg-background p-2 hover:bg-destructive hover:text-destructive-foreground transition-colors"
