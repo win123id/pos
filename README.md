@@ -1,109 +1,297 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# 🏪 Digital Printing POS System
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+<div align="center">
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+![POS System](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38b2ac?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-## Features
+*A comprehensive Point of Sale system designed for digital printing businesses with inventory management, customer tracking, and financial analytics.*
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Middleware
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+[🚀 Live Demo](#) · [📖 Documentation](#features) · [🛠️ Installation](#installation) · [🤝 Contributing](#contributing)
 
-## Demo
+</div>
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+## 📋 Table of Contents
 
-## Deploy to Vercel
+- [✨ Features](#-features)
+- [🎯 Business Use Cases](#-business-use-cases)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [📊 Database Schema](#-database-schema)
+- [🚀 Installation](#-installation)
+- [⚙️ Configuration](#️-configuration)
+- [📱 Key Features Overview](#-key-features-overview)
+- [🔧 Development](#-development)
+- [📝 License](#-license)
 
-Vercel deployment will guide you through creating a Supabase account and project.
+## ✨ Features
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+### 🛍️ **Sales Management**
+- **Smart Product Types**: Handle both size-based (width × height) and quantity-based products
+- **Dynamic Pricing**: Automatic price calculation based on dimensions for printing services
+- **Customer Management**: Track customer information and purchase history
+- **Real-time Sales**: Instant transaction processing and receipt generation
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+### 📄 **Invoice Generation**
+- **Professional PDFs**: Beautiful, branded invoices with company information
+- **Detailed Line Items**: Product descriptions, sizes, quantities, and pricing
+- **Automatic Calculations**: Cost analysis with profit margins
+- **Download & Share**: One-click PDF download functionality
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+### 📊 **Financial Analytics**
+- **COGS Tracking**: Comprehensive Cost of Goods Sold analysis
+- **Profit Margins**: Real-time profit calculation per item and overall
+- **Monthly Filtering**: Filter sales and COGS by month/year
+- **Revenue Dashboard**: Track business performance over time
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+### 📦 **Inventory Management**
+- **Product Catalog**: Organize products by type and pricing
+- **Cost Tracking**: Set cost prices and selling prices
+- **Flexible Sizing**: Support for custom dimensions (width × height)
+- **Stock Monitoring**: Track product availability
 
-## Clone and run locally
+### 👥 **Customer Relations**
+- **Customer Database**: Store customer contact information
+- **Purchase History**: View past transactions per customer
+- **Walk-in Support**: Handle anonymous customers seamlessly
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+### 🎨 **User Experience**
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile
+- **Modern UI**: Clean, intuitive interface with Tailwind CSS
+- **Fast Performance**: Optimized for speed and reliability
+- **Mobile Sign-out**: Full mobile functionality with proper authentication
 
-2. Create a Next.js app using the Supabase Starter template npx command
+## 🎯 Business Use Cases
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+### 🖨️ **Digital Printing Services**
+Perfect for businesses that offer:
+- Large format printing (banners, posters, signs)
+- Custom dimension products
+- Variable pricing based on size
+- Bulk order processing
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+### 📱 **Mobile-Friendly Operations**
+- Take orders on tablets or phones
+- Process sales anywhere in your shop
+- Generate invoices on the spot
+- Access business analytics on the go
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+### 💰 **Financial Management**
+- Track exact costs vs revenue
+- Monitor profit margins per product
+- Monthly financial reporting
+- Data-driven business decisions
 
-3. Use `cd` to change into the app's directory
+## 🛠️ Tech Stack
 
-   ```bash
-   cd with-supabase-app
-   ```
+### **Frontend**
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **Lucide React** - Beautiful icons
+- **shadcn/ui** - Modern UI components
 
-4. Rename `.env.example` to `.env.local` and update the following:
+### **Backend**
+- **Supabase** - Backend as a Service
+  - PostgreSQL Database
+  - Real-time subscriptions
+  - Authentication system
+  - Row-level security
 
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+### **PDF Generation**
+- **jsPDF** - Client-side PDF creation
+- **Dynamic imports** - Optimized bundle size
+- **Custom layouts** - Professional invoice design
 
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+## 📊 Database Schema
 
-5. You can now run the Next.js local development server:
+```sql
+-- Products Table
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR NOT NULL,
+  type VARCHAR CHECK (type IN ('size', 'quantity')),
+  price_per_unit NUMERIC NOT NULL,
+  cost_price NUMERIC,
+  created_at TIMESTAMP DEFAULT NOW()
+);
 
-   ```bash
-   npm run dev
-   ```
+-- Sales Table
+CREATE TABLE sales (
+  id SERIAL PRIMARY KEY,
+  total_price NUMERIC NOT NULL,
+  customer_id INTEGER REFERENCES customers(id),
+  created_at TIMESTAMP DEFAULT NOW()
+);
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+-- Sale Items Table
+CREATE TABLE sale_items (
+  id SERIAL PRIMARY KEY,
+  sale_id INTEGER REFERENCES sales(id),
+  product_id INTEGER REFERENCES products(id),
+  width NUMERIC,
+  height NUMERIC,
+  quantity INTEGER,
+  item_total NUMERIC NOT NULL,
+  description TEXT,
+  cost_price NUMERIC,
+  price_per_unit NUMERIC
+);
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+-- Customers Table
+CREATE TABLE customers (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR NOT NULL,
+  email VARCHAR,
+  phone VARCHAR,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+## 🚀 Installation
 
-## Feedback and issues
+### **Prerequisites**
+- Node.js 18+ 
+- npm or yarn
+- Git
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+### **Step 1: Clone Repository**
+```bash
+git clone https://github.com/win123id/pos.git
+cd pos
+```
 
-## More Supabase examples
+### **Step 2: Install Dependencies**
+```bash
+npm install
+# or
+yarn install
+```
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+### **Step 3: Set Up Supabase**
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Run the SQL schema from above in your Supabase SQL editor
+3. Get your project URL and anon key from Supabase settings
+
+### **Step 4: Environment Configuration**
+Create a `.env.local` file:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### **Step 5: Run Development Server**
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## ⚙️ Configuration
+
+### **Company Information**
+Edit the invoice generation in `lib/pdf.ts` to customize:
+- Company name: "Digital Printing Indoor - Outdoor"
+- Contact: "Offset & Media Promotion | Email: win123id@gmail.com"
+- Logo: Place your logo in `public/invoice.png`
+
+### **Database Customization**
+- Add more product types by modifying the `type` constraint
+- Extend customer fields for additional information
+- Customize tax calculations in the sales logic
+
+### **UI Customization**
+- Modify colors in `tailwind.config.js`
+- Update components in `components/ui/`
+- Adjust layouts in `app/` directory
+
+## 📱 Key Features Overview
+
+### 🏠 **Dashboard**
+- Real-time sales overview
+- Quick action buttons
+- Recent activity feed
+- Business metrics at a glance
+
+### 🛒 **Sales Management**
+- Intuitive product selection
+- Dynamic price calculation for size-based products
+- Customer information capture
+- Instant PDF invoice generation
+
+### 📊 **COGS Analytics**
+- Visual profit metrics with gradient cards
+- Monthly/yearly filtering options
+- Detailed cost breakdown per item
+- Profit margin analysis
+
+### 📄 **Professional Invoices**
+- Beautiful PDF layout with company branding
+- Detailed line items with dimensions
+- Automatic cost and profit calculations
+- One-click download functionality
+
+## 🔧 Development
+
+### **Available Scripts**
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
+
+### **Project Structure**
+```
+pos/
+├── app/                 # Next.js app directory
+│   ├── protected/       # Dashboard page
+│   ├── sales/           # Sales management
+│   ├── products/        # Product management
+│   ├── customers/       # Customer management
+│   ├── cogs/           # Cost analysis
+│   └── auth/           # Authentication pages
+├── components/          # Reusable components
+│   ├── ui/             # Base UI components
+│   └── layout/         # Layout components
+├── lib/                # Utility functions
+│   ├── supabase/       # Database client
+│   ├── currency.ts     # Currency formatting
+│   └── pdf.ts          # PDF generation
+└── public/             # Static assets
+```
+
+## 🤝 Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+### **How to Contribute**
+- 🐛 Report bugs
+- 💡 Suggest features
+- 📝 Improve documentation
+- 🔧 Submit pull requests
+- ⭐ Give the project a star
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+## 🙏 Acknowledgments
+
+- **Next.js Team** - For the amazing React framework
+- **Supabase** - For the excellent backend solution
+- **Tailwind CSS** - For the utility-first CSS framework
+- **shadcn/ui** - For the beautiful UI components
+
+---
+
+<div align="center">
+
+**Made with ❤️ for Digital Printing Businesses**
+
+📧 **Contact:** win123id@gmail.com · 🌐 **Repository:** [github.com/win123id/pos](https://github.com/win123id/pos)
+
+</div>
