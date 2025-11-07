@@ -174,10 +174,10 @@ export default function EditSalePage() {
     // Calculate item total
     if (item.product.type === 'quantity' && item.quantity) {
       item.item_total = item.quantity * item.product.price_per_unit;
-    } else if (item.product.type === 'size' && item.width && item.height) {
-      // Calculate area in cm² (width in cm × height in cm)
+    } else if (item.product.type === 'size' && item.width && item.height && item.quantity) {
+      // Calculate area in cm² (width in cm × height in cm) × quantity
       const areaInCm2 = item.width * item.height;
-      item.item_total = areaInCm2 * item.product.price_per_unit;
+      item.item_total = areaInCm2 * item.product.price_per_unit * item.quantity;
     }
 
     setSaleItems(updatedItems);
@@ -413,6 +413,15 @@ export default function EditSalePage() {
                               step="0.1"
                               value={item.height || 0}
                               onChange={(e) => updateSaleItem(index, 'height', parseFloat(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>Quantity</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity || 1}
+                              onChange={(e) => updateSaleItem(index, 'quantity', parseInt(e.target.value) || 1)}
                             />
                           </div>
                         </>
