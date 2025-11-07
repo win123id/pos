@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Package, Users, Home, LogOut, User } from "lucide-react";
+import { ShoppingCart, Package, Users, Home, LogOut, User, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const navigation = [
   { name: "Sales", href: "/sales", icon: ShoppingCart },
   { name: "Products", href: "/products", icon: Package },
   { name: "Customers", href: "/customers", icon: Users },
+  { name: "COGS", href: "/cogs", icon: TrendingDown },
 ];
 
 export function Header() {
