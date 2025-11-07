@@ -129,7 +129,7 @@ export default function SalesPage() {
   const handleGeneratePDF = async (sale: Sale) => {
     try {
       // Import the PDF generation function
-      const { generateSalePDF } = await import('@/lib/currency');
+      const { generateSalePDF } = await import('@/lib/pdf');
       
       // Generate and download the PDF
       await generateSalePDF(sale);
