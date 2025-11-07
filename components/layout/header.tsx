@@ -75,8 +75,14 @@ export function Header() {
           
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <Button variant="outline" size="sm">
-              <User className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleSignOut}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="sr-only">Sign Out</span>
             </Button>
           </div>
         </div>
