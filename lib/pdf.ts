@@ -1,5 +1,10 @@
 // PDF Generation Utility
 
+// Helper function to round up to nearest 1000
+const roundUpToNearestThousand = (amount: number): number => {
+  return Math.ceil(amount / 1000) * 1000;
+};
+
 interface SaleItem {
   id?: number;
   product_id: number;
@@ -237,11 +242,12 @@ export const generateSalePDF = async (sale: Sale) => {
       const unitPrice = product?.price_per_unit || 0;
       let pricePerUnitText = '';
       if (product?.type === 'size') {
-        // For size-based: calculate width × height × selling price
+        // For size-based: calculate width × height × selling price, rounded up to nearest 1000
         const width = item.width || 0;
         const height = item.height || 0;
         const calculatedPrice = width * height * unitPrice;
-        pricePerUnitText = `Rp ${calculatedPrice.toLocaleString('id-ID')}`;
+        const roundedPrice = roundUpToNearestThousand(calculatedPrice);
+        pricePerUnitText = `Rp ${roundedPrice.toLocaleString('id-ID')}`;
       } else {
         // For quantity-based: show unit price
         pricePerUnitText = `Rp ${unitPrice.toLocaleString('id-ID')}`;
@@ -255,11 +261,13 @@ export const generateSalePDF = async (sale: Sale) => {
       pdf.setFont('helvetica', 'bold');
       let finalAmount = 0;
       if (product?.type === 'size') {
-        // For size-based: (width × height × selling price) × quantity
+        // For size-based: use rounded price per unit × quantity for consistency
         const width = item.width || 0;
         const height = item.height || 0;
         const quantity = item.quantity || 1;
-        finalAmount = width * height * unitPrice * quantity;
+        const calculatedPrice = width * height * unitPrice;
+        const roundedPrice = roundUpToNearestThousand(calculatedPrice);
+        finalAmount = roundedPrice * quantity;
       } else {
         // For quantity-based: unit price × quantity
         finalAmount = item.item_total;
