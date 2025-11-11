@@ -255,8 +255,8 @@ export const generateSalePDF = async (sale: Sale) => {
       pdf.text(pricePerUnitText, xPos + columnWidths[0] + columnWidths[1] + 15, yPosition + 5, { align: 'center' });
       
       // Amount (calculated total)
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
       let finalAmount = 0;
       if (product?.type === 'size') {
         // For size-based: use rounded price per unit × quantity for consistency
