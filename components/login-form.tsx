@@ -49,7 +49,7 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="border-2 shadow-lg">
+      <Card className="border border-white/10 bg-black/60 backdrop-blur-lg shadow-2xl rounded-2xl">
         <CardHeader className="space-y-4 pb-4">
           <div className="flex justify-center pt-4">
             <img 
