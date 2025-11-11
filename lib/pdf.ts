@@ -89,7 +89,7 @@ export const generateSalePDF = async (sale: Sale) => {
   // Company info on the right
   const companyInfoX = margin + 45;
   pdf.text('Digital Printing Indoor - Outdoor', companyInfoX, yPosition + 8);
-  pdf.text('Offset & Media Promotion | Email: win123id@gmail.com', companyInfoX, yPosition + 18);
+  pdf.text('Offset & Media Promotion | Email: win123id@gmail.com', companyInfoX, yPosition + 12);
   
   yPosition += 35;
   
@@ -141,9 +141,7 @@ export const generateSalePDF = async (sale: Sale) => {
   pdf.text(`Date`, detailsX, detailsY);
   pdf.text(`${new Date(sale.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`, detailsX + 35, detailsY);
   
-  detailsY += 6;
-  pdf.text(`Time`, detailsX, detailsY);
-  pdf.text(`${new Date(sale.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, detailsX + 35, detailsY);
+  
   
   // Set yPosition to the maximum of both sections
   yPosition = Math.max(billToY, detailsY + 10);
