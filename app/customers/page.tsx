@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Edit, Trash2, User, Save, X, Phone, Mail, MapPin } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
-import { Header } from "@/components/layout/header";
+
 
 interface Customer {
   id: number;
@@ -149,7 +149,7 @@ export default function CustomersPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      
       <main className="flex-1 bg-muted/30">
         <div className="container py-8 px-6">
           <div className="space-y-8">

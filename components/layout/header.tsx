@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Dashboard", href: "/protected", icon: Home },
+  { name: "Dashboard", href: "/", icon: Home },
   { name: "Sales", href: "/sales", icon: ShoppingCart },
   { name: "Products", href: "/products", icon: Package },
   { name: "Customers", href: "/customers", icon: Users },
@@ -31,7 +31,7 @@ export function Header() {
 
       <div className="container flex h-16 items-center justify-between px-4 relative">
         {/* Minimal Futuristic Logo */}
-        <Link href="/protected" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2 group">
           <img
             src="/logo.png"
             alt="POS Logo"

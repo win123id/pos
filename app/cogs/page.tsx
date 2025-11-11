@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
-import { Header } from "@/components/layout/header";
 import { 
   TrendingDown, 
   Package, 
@@ -220,8 +219,6 @@ export default function COGSPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
       <main className="flex-1 bg-muted/30">
         <div className="container py-8 px-6 space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -497,6 +494,5 @@ export default function COGSPage() {
           </div>
         </div>
       </main>
-    </div>
   );
 }
