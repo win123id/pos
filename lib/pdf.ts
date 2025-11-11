@@ -301,6 +301,17 @@ export const generateSalePDF = async (sale: Sale) => {
   pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
   pdf.text('Payment terms: Due upon receipt. Thank you for your business!', margin, yPosition);
   
+  // Payment details
+  yPosition += 8;
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Payment Details:', margin, yPosition);
+  yPosition += 5;
+  pdf.text('Bank: BCA', margin, yPosition);
+  yPosition += 5;
+  pdf.text('Account No: 5270577565', margin, yPosition);
+  yPosition += 5;
+  pdf.text('Account Name: Ricky Iswanto', margin, yPosition);
+  
   // Footer
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
