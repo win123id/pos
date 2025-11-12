@@ -1,0 +1,165 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { 
+  ShoppingCart, 
+  Package, 
+  Users, 
+  Home, 
+  LogOut, 
+  TrendingDown,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+
+const navigation = [
+  { name: "Dashboard", href: "/", icon: Home },
+  { name: "Sales", href: "/sales", icon: ShoppingCart },
+  { name: "Products", href: "/products", icon: Package },
+  { name: "Customers", href: "/customers", icon: Users },
+  { name: "COGS", href: "/cogs", icon: TrendingDown },
+];
+
+interface SidebarProps {
+  className?: string;
+}
+
+export function Sidebar({ className }: SidebarProps) {
+  const pathname = usePathname();
+  const supabase = createClient();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/auth/login";
+  };
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+    if (isMobileOpen) {
+      setIsMobileOpen(false);
+    }
+  };
+
+  const toggleMobile = () => {
+    setIsMobileOpen(!isMobileOpen);
+  };
+
+  return (
+    <>
+      {/* Mobile Menu Button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleMobile}
+          className="bg-background/80 backdrop-blur-sm"
+        >
+          {isMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Sidebar Overlay for Mobile */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden" 
+          onClick={toggleMobile}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed left-0 top-0 z-50 h-screen bg-card border-r transition-all duration-300 ease-in-out",
+        isCollapsed ? "w-16" : "w-64",
+        isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        className
+      )}>
+        <div className="flex h-full flex-col">
+          {/* Header */}
+          <div className="flex h-16 items-center justify-between border-b px-4">
+            {!isCollapsed && (
+              <Link href="/" className="flex items-center gap-2 group">
+                <img
+                  src="/logo.png"
+                  alt="POS Logo"
+                  className="h-8 w-auto transition-transform duration-300 group-hover:scale-110"
+                />
+                <span className="text-lg font-semibold tracking-wide bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
+                  POS System
+                </span>
+              </Link>
+            )}
+            
+            {/* Collapse Toggle - Desktop Only */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleCollapse}
+              className="hidden lg:flex"
+            >
+              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-2">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setIsMobileOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    {!isCollapsed && (
+                      <>
+                        <span className="truncate">{item.name}</span>
+                        {isActive && (
+                          <Badge variant="secondary" className="ml-auto">
+                            Active
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* Footer with Sign Out */}
+          <div className="border-t p-4">
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              className={cn(
+                "w-full justify-start text-muted-foreground hover:text-foreground transition-all",
+                isCollapsed && "justify-center px-2"
+              )}
+            >
+              <LogOut className="h-4 w-4" />
+              {!isCollapsed && <span className="ml-2">Sign Out</span>}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

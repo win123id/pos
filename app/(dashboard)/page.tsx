@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatRupiah } from "@/lib/currency";
 import { ShoppingCart, Package, Users, DollarSign, Plus, Eye, Edit } from "lucide-react";
 import Link from "next/link";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -71,161 +73,180 @@ export default async function Home() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <div className="flex items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Today's Sales</h3>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Sales</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="text-2xl font-bold">{formatRupiah(todayTotal)}</div>
-          <p className="text-xs text-muted-foreground">Total revenue today</p>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatRupiah(todayTotal)}</div>
+            <p className="text-xs text-muted-foreground">Total revenue today</p>
+          </CardContent>
+        </Card>
         
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <div className="flex items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Today's Orders</h3>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="text-2xl font-bold">{todaySalesCount || 0}</div>
-          <p className="text-xs text-muted-foreground">Orders today</p>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{todaySalesCount || 0}</div>
+            <p className="text-xs text-muted-foreground">Orders today</p>
+          </CardContent>
+        </Card>
         
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <div className="flex items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Products</h3>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Products</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="text-2xl font-bold">{totalProducts || 0}</div>
-          <p className="text-xs text-muted-foreground">In inventory</p>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalProducts || 0}</div>
+            <p className="text-xs text-muted-foreground">In inventory</p>
+          </CardContent>
+        </Card>
         
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <div className="flex items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Customers</h3>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Customers</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="text-2xl font-bold">{totalCustomers || 0}</div>
-          <p className="text-xs text-muted-foreground">Total customers</p>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCustomers || 0}</div>
+            <p className="text-xs text-muted-foreground">Total customers</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
-      <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Link 
-            href="/sales/new"
-            className="flex items-center justify-center rounded-lg bg-primary text-primary-foreground p-4 hover:bg-primary/90 transition-colors font-medium"
-          >
-            <ShoppingCart className="mr-2 h-5 w-5" />
-            New Sale
-          </Link>
-          <Link 
-            href="/products"
-            className="flex items-center justify-center rounded-lg border border-input bg-background p-4 hover:bg-accent hover:text-accent-foreground transition-colors font-medium"
-          >
-            <Package className="mr-2 h-5 w-5" />
-            Manage Products
-          </Link>
-          <Link 
-            href="/customers"
-            className="flex items-center justify-center rounded-lg border border-input bg-background p-4 hover:bg-accent hover:text-accent-foreground transition-colors font-medium"
-          >
-            <Users className="mr-2 h-5 w-5" />
-            View Customers
-          </Link>
-          <Link 
-            href="/sales"
-            className="flex items-center justify-center rounded-lg border border-input bg-background p-4 hover:bg-accent hover:text-accent-foreground transition-colors font-medium"
-          >
-            <Eye className="mr-2 h-5 w-5" />
-            Sales History
-          </Link>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Common tasks you can perform</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Button asChild className="h-auto py-4">
+              <Link href="/sales/new" className="flex items-center justify-center">
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                New Sale
+              </Link>
+            </Button>
+            <Button variant="outline" asChild className="h-auto py-4">
+              <Link href="/products" className="flex items-center justify-center">
+                <Package className="mr-2 h-5 w-5" />
+                Manage Products
+              </Link>
+            </Button>
+            <Button variant="outline" asChild className="h-auto py-4">
+              <Link href="/customers" className="flex items-center justify-center">
+                <Users className="mr-2 h-5 w-5" />
+                View Customers
+              </Link>
+            </Button>
+            <Button variant="outline" asChild className="h-auto py-4">
+              <Link href="/sales" className="flex items-center justify-center">
+                <Eye className="mr-2 h-5 w-5" />
+                Sales History
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Sales */}
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Recent Sales</h2>
-            <Link 
-              href="/sales"
-              className="text-sm text-primary hover:underline flex items-center"
-            >
-              View all
-              <Eye className="ml-1 h-3 w-3" />
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {recentSales && recentSales.length > 0 ? (
-              recentSales.map((sale: any) => (
-                <div key={sale.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Sale #{sale.id}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {sale.customers?.name || 'Walk-in Customer'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(sale.created_at).toLocaleString()}
-                    </p>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Sales</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/sales" className="flex items-center">
+                  View all
+                  <Eye className="ml-1 h-3 w-3" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentSales && recentSales.length > 0 ? (
+                recentSales.map((sale: any) => (
+                  <div key={sale.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium">Sale #{sale.id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {sale.customers?.name || 'Walk-in Customer'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(sale.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{formatRupiah(sale.total_price)}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{formatRupiah(sale.total_price)}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground text-center py-8">No sales yet today</p>
-            )}
-          </div>
-        </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-8">No sales yet today</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Recent Products */}
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Recent Products</h2>
-            <Link 
-              href="/products"
-              className="text-sm text-primary hover:underline flex items-center"
-            >
-              Manage
-              <Edit className="ml-1 h-3 w-3" />
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {lowStockProducts && lowStockProducts.length > 0 ? (
-              lowStockProducts.map((product: any) => (
-                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-muted-foreground capitalize">{product.type}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatRupiah(product.price_per_unit)} per {product.type === 'size' ? 'm²' : 'unit'}
-                    </p>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Products</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/products" className="flex items-center">
+                  Manage
+                  <Edit className="ml-1 h-3 w-3" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {lowStockProducts && lowStockProducts.length > 0 ? (
+                lowStockProducts.map((product: any) => (
+                  <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{product.name}</p>
+                      <p className="text-sm text-muted-foreground capitalize">{product.type}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatRupiah(product.price_per_unit)} per {product.type === 'size' ? 'm²' : 'unit'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">
+                        {product.type === 'size' ? 'Size-based' : 'Quantity-based'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">
-                      {product.type === 'size' ? 'Size-based' : 'Quantity-based'}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground text-center py-8">No products added yet</p>
-            )}
-          </div>
-        </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-8">No products added yet</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* User Info */}
-      <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-4">User Information</h2>
-        <div className="text-sm">
-          <p><strong>Email:</strong> {data.claims.email || 'N/A'}</p>
-          <p><strong>User ID:</strong> {data.claims.sub || 'N/A'}</p>
-          <p><strong>Last Sign In:</strong> {new Date(data.claims.iat * 1000).toLocaleString()}</p>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>User Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm space-y-2">
+            <p><strong>Email:</strong> {data.claims.email || 'N/A'}</p>
+            <p><strong>User ID:</strong> {data.claims.sub || 'N/A'}</p>
+            <p><strong>Last Sign In:</strong> {new Date(data.claims.iat * 1000).toLocaleString()}</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
