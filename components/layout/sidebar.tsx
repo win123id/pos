@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   ShoppingCart, 
   Package, 
@@ -30,12 +30,13 @@ const navigation = [
 
 interface SidebarProps {
   className?: string;
+  isCollapsed?: boolean;
+  onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, isCollapsed = false, onCollapseChange }: SidebarProps) {
   const pathname = usePathname();
   const supabase = createClient();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -44,7 +45,8 @@ export function Sidebar({ className }: SidebarProps) {
   };
 
   const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+    const newCollapsedState = !isCollapsed;
+    onCollapseChange?.(newCollapsedState);
     if (isMobileOpen) {
       setIsMobileOpen(false);
     }
@@ -60,11 +62,12 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <Button
           variant="outline"
-          size="icon"
+          size="sm"
           onClick={toggleMobile}
-          className="bg-background/80 backdrop-blur-sm"
+          className="bg-background/95 backdrop-blur-sm shadow-md"
         >
-          {isMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          {isMobileOpen ? <X className="h-4 w-4 mr-2" /> : <Menu className="h-4 w-4 mr-2" />}
+          {isMobileOpen ? 'Close' : 'Menu'}
         </Button>
       </div>
 
@@ -78,14 +81,14 @@ export function Sidebar({ className }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed left-0 top-0 z-50 h-screen bg-card border-r transition-all duration-300 ease-in-out",
+        "fixed left-0 top-0 z-50 h-screen bg-background border-r transition-all duration-300 ease-in-out flex-shrink-0",
         isCollapsed ? "w-16" : "w-64",
         isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         className
       )}>
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex h-16 items-center justify-between border-b px-4">
+          <div className="flex h-16 items-center justify-between border-b border-border px-4">
             {!isCollapsed && (
               <Link href="/" className="flex items-center gap-2 group">
                 <img
@@ -98,16 +101,6 @@ export function Sidebar({ className }: SidebarProps) {
                 </span>
               </Link>
             )}
-            
-            {/* Collapse Toggle - Desktop Only */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleCollapse}
-              className="hidden lg:flex"
-            >
-              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
           </div>
 
           {/* Navigation */}
@@ -145,7 +138,7 @@ export function Sidebar({ className }: SidebarProps) {
           </nav>
 
           {/* Footer with Sign Out */}
-          <div className="border-t p-4">
+          <div className="border-t border-border p-4">
             <Button
               variant="ghost"
               onClick={handleSignOut}

@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Save } from "lucide-react";
-import { Header } from "@/components/layout/header";
 
 interface Product {
   id: number;
@@ -184,10 +183,7 @@ export default function NewSalePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="flex-1 bg-muted/30">
-        <div className="container py-8 px-6 space-y-8">
+    <div className="space-y-8">
           <div className="flex flex-col gap-4">
             <h1 className="text-3xl font-bold tracking-tight">New Sale</h1>
             <p className="text-muted-foreground text-lg">
@@ -376,8 +372,6 @@ export default function NewSalePage() {
           </div>
         </div>
       </div>
-        </div>
-      </main>
     </div>
   );
 }
