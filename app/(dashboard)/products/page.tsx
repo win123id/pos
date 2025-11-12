@@ -96,12 +96,19 @@ export default function ProductsPage() {
       };
 
       if (editingProduct) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('products')
           .update(submitData)
-          .eq('id', editingProduct.id);
+          .eq('id', editingProduct.id)
+          .select();
         
-        if (error) throw error;
+        if (error) {
+          alert("Update failed: " + error.message);
+          throw error;
+        } else if (!data || data.length === 0) {
+          alert("You don't have permission to update this data.");
+          throw new Error("Permission denied");
+        }
       } else {
         const { error } = await supabase
           .from('products')
@@ -134,12 +141,19 @@ export default function ProductsPage() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        alert("Delete failed: " + error.message);
+        throw error;
+      } else if (!data || data.length === 0) {
+        alert("You don't have permission to delete this data.");
+        throw new Error("Permission denied");
+      }
       await fetchProducts();
     } catch (error: any) {
       setError(error.message || 'Failed to delete product');

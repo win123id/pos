@@ -95,12 +95,19 @@ export default function CustomersPage() {
       };
 
       if (editingCustomer) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('customers')
           .update(submitData)
-          .eq('id', editingCustomer.id);
+          .eq('id', editingCustomer.id)
+          .select();
         
-        if (error) throw error;
+        if (error) {
+          alert("Update failed: " + error.message);
+          throw error;
+        } else if (!data || data.length === 0) {
+          alert("You don't have permission to update this data.");
+          throw new Error("Permission denied");
+        }
       } else {
         const { error } = await supabase
           .from('customers')
@@ -133,12 +140,19 @@ export default function CustomersPage() {
     if (!confirm('Are you sure you want to delete this customer?')) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('customers')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        alert("Delete failed: " + error.message);
+        throw error;
+      } else if (!data || data.length === 0) {
+        alert("You don't have permission to delete this data.");
+        throw new Error("Permission denied");
+      }
       await fetchCustomers();
     } catch (error: any) {
       setError(error.message || 'Failed to delete customer');

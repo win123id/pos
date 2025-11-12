@@ -142,20 +142,34 @@ export default function SalesPage() {
 
     try {
       // First delete sale items
-      const { error: itemsError } = await supabase
+      const { data: itemsData, error: itemsError } = await supabase
         .from('sale_items')
         .delete()
-        .eq('sale_id', id);
+        .eq('sale_id', id)
+        .select();
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        alert("Delete failed: " + itemsError.message);
+        throw itemsError;
+      } else if (!itemsData || itemsData.length === 0) {
+        alert("You don't have permission to delete this data.");
+        throw new Error("Permission denied");
+      }
 
       // Then delete the sale
-      const { error: saleError } = await supabase
+      const { data: saleData, error: saleError } = await supabase
         .from('sales')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
-      if (saleError) throw saleError;
+      if (saleError) {
+        alert("Delete failed: " + saleError.message);
+        throw saleError;
+      } else if (!saleData || saleData.length === 0) {
+        alert("You don't have permission to delete this data.");
+        throw new Error("Permission denied");
+      }
 
       // Refresh the sales list
       await fetchSales();
