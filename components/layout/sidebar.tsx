@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { 
   ShoppingCart, 
   Package, 
@@ -13,11 +14,11 @@ import {
   Menu,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 const navigation = [
@@ -25,7 +26,8 @@ const navigation = [
   { name: "Sales", href: "/sales", icon: ShoppingCart },
   { name: "Products", href: "/products", icon: Package },
   { name: "Customers", href: "/customers", icon: Users },
-  { name: "COGS", href: "/cogs", icon: TrendingDown },
+  { name: "COGS", href: "/cogs", icon: TrendingDown, adminOnly: true },
+  { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
 ];
 
 interface SidebarProps {
@@ -38,6 +40,7 @@ export function Sidebar({ className, isCollapsed = false, onCollapseChange }: Si
   const pathname = usePathname();
   const supabase = createClient();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -55,6 +58,23 @@ export function Sidebar({ className, isCollapsed = false, onCollapseChange }: Si
   const toggleMobile = () => {
     setIsMobileOpen(!isMobileOpen);
   };
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        setUserRole(profile?.role || 'user');
+      }
+    };
+
+    fetchUserRole();
+  }, [supabase]);
 
   return (
     <>
@@ -106,7 +126,7 @@ export function Sidebar({ className, isCollapsed = false, onCollapseChange }: Si
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
             <div className="space-y-2">
-              {navigation.map((item) => {
+              {navigation.filter((item) => !item.adminOnly || userRole === 'admin').map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link

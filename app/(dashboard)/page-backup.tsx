@@ -6,13 +6,13 @@ import { ShoppingCart, Package, Users, DollarSign, Plus, Eye, Edit } from "lucid
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AdminAccessError } from "@/components/admin-access-error";
+import { AdminAccessErrorServer } from "@/components/admin-access-error-server";
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams?: { error?: string } }) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.getClaims();
-  if (error || !data?.claims) {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
     redirect("/auth/login");
   }
 
@@ -64,9 +64,13 @@ export default async function Home() {
 
   const todayTotal = todaySales?.reduce((sum, sale) => sum + parseFloat(sale.total_price), 0) || 0;
 
+  // Check for admin access error
+  if (searchParams?.error === 'admin_required') {
+    return <AdminAccessErrorServer show={true} />;
+  }
+
   return (
     <div className="space-y-8">
-      <AdminAccessError />
       <div className="flex flex-col gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-lg">
@@ -244,9 +248,9 @@ export default async function Home() {
         </CardHeader>
         <CardContent>
           <div className="text-sm space-y-2">
-            <p><strong>Email:</strong> {data.claims.email || 'N/A'}</p>
-            <p><strong>User ID:</strong> {data.claims.sub || 'N/A'}</p>
-            <p><strong>Last Sign In:</strong> {new Date(data.claims.iat * 1000).toLocaleString()}</p>
+            <p><strong>Email:</strong> {user.email || 'N/A'}</p>
+            <p><strong>User ID:</strong> {user.id || 'N/A'}</p>
+            <p><strong>Last Sign In:</strong> {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'N/A'}</p>
           </div>
         </CardContent>
       </Card>
