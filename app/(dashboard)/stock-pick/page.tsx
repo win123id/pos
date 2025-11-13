@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, TrendingUp, TrendingDown, Target, Shield, X, Save, RefreshCw } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Target, Shield, X, Save, RefreshCw, Edit } from "lucide-react";
 
 interface StockPick {
   id: string;
@@ -243,6 +243,14 @@ export default function StockPickPage() {
       notes: stock.notes
     });
     setIsAddingStock(true);
+    
+    // Scroll to form after a short delay to ensure it's rendered
+    setTimeout(() => {
+      const formElement = document.getElementById('stock-form');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   const handleDelete = async (id: string) => {
@@ -434,7 +442,7 @@ export default function StockPickPage() {
             </div>
 
             {isAddingStock && (
-              <Card>
+              <Card id="stock-form">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
@@ -556,13 +564,26 @@ export default function StockPickPage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {stockPicks.length > 0 ? (
                 stockPicks.map((stock) => (
-                  <Card key={`${stock.id}-${stock.updatedAt || stock.createdAt}`} className="hover:shadow-lg transition-shadow">
+                  <Card 
+                    key={`${stock.id}-${stock.updatedAt || stock.createdAt}`} 
+                    className={`hover:shadow-lg transition-shadow ${
+                      editingStock?.id === stock.id ? 'ring-2 ring-blue-500 shadow-blue-200' : ''
+                    }`}
+                  >
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-2xl font-bold text-blue-600">
-                            {stock.ticker}
-                          </CardTitle>
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-2xl font-bold text-blue-600">
+                              {stock.ticker}
+                            </CardTitle>
+                            {editingStock?.id === stock.id && (
+                              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                <Edit className="h-3 w-3" />
+                                Editing
+                              </div>
+                            )}
+                          </div>
                           <CardDescription className="text-sm mt-1 line-clamp-1" title={stock.companyName}>
                             {truncateCompanyName(stock.companyName)}
                           </CardDescription>
