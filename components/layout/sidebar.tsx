@@ -10,7 +10,8 @@ import {
   Users, 
   Home, 
   LogOut, 
-  TrendingDown,
+  TrendingUp,
+  ChartCandlestick,
   Menu,
   X,
   ChevronLeft,
@@ -21,12 +22,15 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 
+
+
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home, adminOnly: true },
   { name: "Sales", href: "/sales", icon: ShoppingCart, adminOnly: true },
   { name: "Products", href: "/products", icon: Package, adminOnly: true },
   { name: "Customers", href: "/customers", icon: Users, adminOnly: true },
-  { name: "COGS", href: "/cogs", icon: TrendingDown, adminOnly: true },
+  { name: "COGS", href: "/cogs", icon: TrendingUp, adminOnly: true },
+  { name: "Stock Pick", href: "/stock-pick", icon: ChartCandlestick, adminOnly: false },
   { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
 ];
 
