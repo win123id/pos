@@ -22,10 +22,10 @@ import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Sales", href: "/sales", icon: ShoppingCart },
-  { name: "Products", href: "/products", icon: Package },
-  { name: "Customers", href: "/customers", icon: Users },
+  { name: "Dashboard", href: "/", icon: Home, adminOnly: true },
+  { name: "Sales", href: "/sales", icon: ShoppingCart, adminOnly: true },
+  { name: "Products", href: "/products", icon: Package, adminOnly: true },
+  { name: "Customers", href: "/customers", icon: Users, adminOnly: true },
   { name: "COGS", href: "/cogs", icon: TrendingDown, adminOnly: true },
   { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
 ];

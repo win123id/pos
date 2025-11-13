@@ -33,13 +33,30 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Sign in the user
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
-      // Redirect to homepage after successful login
-      router.push("/");
+
+      // Get user role from profiles table
+      if (authData.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', authData.user.id)
+          .single();
+
+        const userRole = profile?.role || 'user';
+        
+        // Redirect based on user role
+        if (userRole === 'user') {
+          router.push('/stock-pick');
+        } else {
+          router.push('/');
+        }
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {

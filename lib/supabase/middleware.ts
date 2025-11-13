@@ -58,10 +58,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Check admin role for admin routes
-  const adminRoutes = ['/users', '/cogs'];
+  const adminRoutes = ['/users', '/cogs', '/customers', '/products', '/sales'];
   const isAdminRoute = adminRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
-  );
+  ) || request.nextUrl.pathname === '/';
 
   if (isAdminRoute && user) {
     const { data: profile } = await supabase
@@ -72,7 +72,7 @@ export async function updateSession(request: NextRequest) {
 
     if (!profile || profile.role !== 'admin') {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
+      url.pathname = '/stock-pick';
       url.searchParams.set('error', 'admin_required');
       return NextResponse.redirect(url);
     }
