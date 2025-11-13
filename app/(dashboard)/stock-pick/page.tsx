@@ -460,11 +460,11 @@ export default function StockPickPage() {
                               const newTicker = e.target.value.toUpperCase();
                               setFormData({ ...formData, ticker: newTicker });
                               
-                              // Auto-fetch price when ticker is complete (3+ chars and ends with .JK)
-                              if (newTicker.length >= 3 && (newTicker.endsWith('.JK') || newTicker.length >= 6)) {
+                              // Auto-fetch price when ticker is complete (ends with .JK)
+                              if (newTicker.endsWith('.JK') && newTicker.length >= 6) {
                                 setTimeout(() => {
                                   fetchSingleStockPrice(newTicker);
-                                }, 500); // Small delay to avoid too many API calls
+                                }, 800); // Longer delay to avoid premature API calls
                               }
                             }}
                             placeholder="BBCA.JK"
