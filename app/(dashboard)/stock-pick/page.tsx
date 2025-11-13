@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, TrendingUp, TrendingDown, Target, Shield, X, Save, RefreshCw, Edit } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Target, Shield, X, Save, RefreshCw, Edit, Star, ThumbsUp, Minus, ThumbsDown } from "lucide-react";
 
 interface StockPick {
   id: string;
@@ -408,6 +408,55 @@ export default function StockPickPage() {
     return name.substring(0, maxLength - 3) + '...';
   };
 
+  const getRecommendationColor = (recommendationKey?: string) => {
+    switch (recommendationKey?.toLowerCase()) {
+      case 'strong_buy':
+      case 'buy':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'hold':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'sell':
+      case 'strong_sell':
+        return 'text-red-600 bg-red-50 border-red-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getRecommendationIcon = (recommendationKey?: string) => {
+    switch (recommendationKey?.toLowerCase()) {
+      case 'strong_buy':
+        return <ThumbsUp className="h-3 w-3" />;
+      case 'buy':
+        return <ThumbsUp className="h-3 w-3" />;
+      case 'hold':
+        return <Minus className="h-3 w-3" />;
+      case 'sell':
+        return <ThumbsDown className="h-3 w-3" />;
+      case 'strong_sell':
+        return <ThumbsDown className="h-3 w-3" />;
+      default:
+        return <Star className="h-3 w-3" />;
+    }
+  };
+
+  const formatRecommendationText = (recommendationKey?: string) => {
+    switch (recommendationKey?.toLowerCase()) {
+      case 'strong_buy':
+        return 'Strong Buy';
+      case 'buy':
+        return 'Buy';
+      case 'hold':
+        return 'Hold';
+      case 'sell':
+        return 'Sell';
+      case 'strong_sell':
+        return 'Strong Sell';
+      default:
+        return 'N/A';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <main className="flex-1 bg-muted/30">
@@ -415,9 +464,9 @@ export default function StockPickPage() {
           <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex flex-col gap-4">
-                <h1 className="text-3xl font-bold tracking-tight">Stock Pick Indonesia</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Saham Auto Cuan</h1>
                 <p className="text-muted-foreground text-lg">
-                  Analisis saham dengan support dan take profit
+                  cuan bagi-bagi kalo boncos tanggung sendiri
                 </p>
               </div>
               {!isLoadingRole && userRole === 'admin' && (
@@ -635,6 +684,57 @@ export default function StockPickPage() {
                           </div>
                         )}
                       </div>
+
+                      {/* Analyst Recommendation */}
+                      {stock.livePrice && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
+                            <Star className="h-4 w-4" />
+                            Analyst Recommendation
+                          </div>
+                          {stock.livePrice.recommendation ? (
+                            <div className={`text-center p-2 rounded-lg border ${getRecommendationColor(stock.livePrice.recommendation.recommendationKey)}`}>
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                {getRecommendationIcon(stock.livePrice.recommendation.recommendationKey)}
+                                <span className="text-xs font-bold">
+                                  {formatRecommendationText(stock.livePrice.recommendation.recommendationKey)}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-5 gap-1 text-xs">
+                                <div className="text-center">
+                                  <div className="font-medium text-green-700">{stock.livePrice.recommendation.strongBuy}</div>
+                                  <div className="text-gray-600">Strong</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="font-medium text-green-600">{stock.livePrice.recommendation.buy}</div>
+                                  <div className="text-gray-600">Buy</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="font-medium text-yellow-700">{stock.livePrice.recommendation.hold}</div>
+                                  <div className="text-gray-600">Hold</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="font-medium text-red-600">{stock.livePrice.recommendation.sell}</div>
+                                  <div className="text-gray-600">Sell</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="font-medium text-red-700">{stock.livePrice.recommendation.strongSell}</div>
+                                  <div className="text-gray-600">Strong</div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center p-2 rounded-lg border border-gray-200 bg-gray-50">
+                              <div className="flex items-center justify-center gap-1">
+                                <Star className="h-3 w-3 text-gray-400" />
+                                <span className="text-xs text-gray-500">
+                                  No analyst coverage
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Support Levels */}
                       <div className="space-y-2">

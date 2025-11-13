@@ -6,6 +6,15 @@ export interface StockPriceData {
   currency: string;
   marketState: string;
   companyName?: string;
+  recommendation?: {
+    buy: number;
+    hold: number;
+    sell: number;
+    strongBuy: number;
+    strongSell: number;
+    recommendationMean?: number;
+    recommendationKey?: string;
+  };
 }
 
 export async function fetchStockPrice(ticker: string): Promise<StockPriceData | null> {

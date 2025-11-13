@@ -11,6 +11,15 @@ interface StockPriceData {
   currency: string;
   marketState: string;
   companyName?: string;
+  recommendation?: {
+    buy: number;
+    hold: number;
+    sell: number;
+    strongBuy: number;
+    strongSell: number;
+    recommendationMean?: number;
+    recommendationKey?: string;
+  };
 }
 
 interface YahooFinanceResult {
@@ -22,11 +31,55 @@ interface YahooFinanceResult {
   marketState?: string;
   longName?: string;
   shortName?: string;
+  recommendationTrend?: Array<{
+    period?: string;
+    strongBuy?: number;
+    buy?: number;
+    hold?: number;
+    sell?: number;
+    strongSell?: number;
+  }>;
+  recommendationMean?: number;
+  recommendationKey?: string;
 }
 
 async function fetchStockPrice(ticker: string): Promise<StockPriceData | null> {
   try {
-    const result = await yahoo.quote(ticker) as YahooFinanceResult;
+    // Fetch both quote and recommendation data
+    const [quoteResult, recommendationResult] = await Promise.allSettled([
+      yahoo.quote(ticker) as YahooFinanceResult,
+      yahoo.quoteSummary(ticker, { modules: ['recommendationTrend'] }) as any
+    ]);
+    
+    const result = quoteResult.status === 'fulfilled' ? quoteResult.value : null;
+    const recommendationData = recommendationResult.status === 'fulfilled' ? recommendationResult.value : null;
+    
+    // Get the latest recommendation trend from the recommendationTrend module
+    const latestRecommendation = recommendationData?.recommendationTrend?.trend?.[0];
+    
+    if (!result) {
+      throw new Error('Failed to fetch quote data');
+    }
+    
+    // Calculate recommendation based on analyst counts
+    let calculatedRecommendationKey = undefined;
+    if (latestRecommendation) {
+      const { strongBuy = 0, buy = 0, hold = 0, sell = 0, strongSell = 0 } = latestRecommendation;
+      const totalAnalysts = strongBuy + buy + hold + sell + strongSell;
+      
+      if (totalAnalysts > 0) {
+        const buyScore = strongBuy + buy;
+        const sellScore = sell + strongSell;
+        
+        if (buyScore > sellScore && buyScore > hold) {
+          calculatedRecommendationKey = strongBuy > buy ? 'strong_buy' : 'buy';
+        } else if (sellScore > buyScore && sellScore > hold) {
+          calculatedRecommendationKey = strongSell > sell ? 'strong_sell' : 'sell';
+        } else {
+          calculatedRecommendationKey = 'hold';
+        }
+      }
+    }
     
     return {
       symbol: result.symbol || ticker,
@@ -35,7 +88,16 @@ async function fetchStockPrice(ticker: string): Promise<StockPriceData | null> {
       regularMarketChangePercent: result.regularMarketChangePercent || 0,
       currency: result.currency || 'USD',
       marketState: result.marketState || 'CLOSED',
-      companyName: result.longName || result.shortName || ''
+      companyName: result.longName || result.shortName || '',
+      recommendation: latestRecommendation ? {
+        strongBuy: latestRecommendation.strongBuy || 0,
+        buy: latestRecommendation.buy || 0,
+        hold: latestRecommendation.hold || 0,
+        sell: latestRecommendation.sell || 0,
+        strongSell: latestRecommendation.strongSell || 0,
+        recommendationMean: result.recommendationMean,
+        recommendationKey: calculatedRecommendationKey
+      } : undefined
     };
   } catch (error) {
     console.error(`Error fetching price for ${ticker}:`, error);
