@@ -178,16 +178,64 @@ export default function SalesPage() {
     }
   };
 
-  const handleGeneratePDF = async (sale: Sale) => {
+  const handleGeneratePDF = async (sale: Sale, event?: React.MouseEvent<HTMLButtonElement>) => {
+    // Get button reference for loading state
+    const downloadButton = event?.currentTarget;
+    
     try {
-      // Import the PDF generation function
-      const { generateSalePDF } = await import('@/lib/pdf');
-      
-      // Generate and download the PDF
-      await generateSalePDF(sale);
+      // Show loading state by adding a visual indicator instead of changing icon
+      if (downloadButton) {
+        downloadButton.disabled = true;
+        downloadButton.style.opacity = '0.5';
+      }
+
+      // Call server-side PDF generation API
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sale }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Get PDF blob
+      const pdfBlob = await response.blob();
+
+      // Only proceed if we have actual data
+      if (pdfBlob.size > 0) {
+        // Create download link
+        const pdfUrl = window.URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = `invoice-${String(sale.id).padStart(6, '0')}.pdf`;
+        link.style.display = 'none';
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        
+        // Cleanup
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(pdfUrl);
+        }, 100);
+      } else {
+        console.log('Waiting for download manager to handle file...');
+      }
+
     } catch (error: any) {
       console.error('Failed to generate PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      alert(`Failed to generate PDF: ${error.message}`);
+    } finally {
+      // Restore button state (keep the original icon)
+      if (downloadButton) {
+        downloadButton.disabled = false;
+        downloadButton.style.opacity = '1';
+      }
     }
   };
 
@@ -351,7 +399,7 @@ export default function SalesPage() {
                                 <Edit className="h-4 w-4" />
                               </Link>
                               <button
-                                onClick={() => handleGeneratePDF(sale)}
+                                onClick={(e) => handleGeneratePDF(sale, e)}
                                 className="inline-flex items-center justify-center rounded-lg border border-input bg-background p-2 hover:bg-accent hover:text-accent-foreground transition-colors"
                                 title="Download PDF"
                               >
