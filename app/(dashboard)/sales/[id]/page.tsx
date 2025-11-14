@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
 import { ArrowLeft, Calendar, User, Package, FileText } from "lucide-react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
 
 interface Sale {
   id: number;
@@ -115,7 +114,6 @@ export default function SaleDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main className="flex-1 bg-muted/30">
         <div className="container py-8 px-6 space-y-8">
           <div className="flex items-center gap-4">

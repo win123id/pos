@@ -31,6 +31,7 @@ const navigation = [
   { name: "Customers", href: "/customers", icon: Users, adminOnly: true },
   { name: "COGS", href: "/cogs", icon: TrendingUp, adminOnly: true },
   { name: "Stock Pick", href: "/stock-pick", icon: ChartCandlestick, adminOnly: false },
+  { name: "My Profile", href: "/profiles", icon: UserCog, adminOnly: false },
   { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
 ];
 

@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
 
 interface Product {
   id: number;
@@ -289,7 +288,6 @@ export default function EditSalePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main className="flex-1 bg-muted/30">
         <div className="container py-8 px-6 space-y-8">
           <div className="flex items-center gap-4">
