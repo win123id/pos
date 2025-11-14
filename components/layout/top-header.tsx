@@ -74,7 +74,6 @@ export function TopHeader({ isSidebarCollapsed = false, onToggleSidebar }: TopHe
         
         {/* Right side - theme switcher and avatar dropdown */}
         <div className="flex items-center gap-3">
-          <ThemeSwitcher />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -100,6 +99,17 @@ export function TopHeader({ isSidebarCollapsed = false, onToggleSidebar }: TopHe
                 <span className="text-xs text-muted-foreground">Signed in as</span>
                 <span className="truncate text-sm font-medium">{displayName || "User"}</span>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                }}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span>Theme</span>
+                  <ThemeSwitcher />
+                </div>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={(event) => {

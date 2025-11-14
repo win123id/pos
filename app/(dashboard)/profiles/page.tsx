@@ -129,15 +129,14 @@ export default function ProfilesPage() {
       const supabase = createClient();
 
       const fileExt = file.name.split(".").pop() || "jpg";
-      const filePath = `${profile.id}/avatar-${Date.now()}.${fileExt}`;
+      const filePath = `${profile.id}/avatar.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, file, {
-          cacheControl: "3600",
+          cacheControl: "0",
           upsert: true,
         });
-
       if (uploadError) {
         throw uploadError;
       }
@@ -145,18 +144,20 @@ export default function ProfilesPage() {
       const {
         data: { publicUrl },
       } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
 
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: cacheBustedUrl })
         .eq("id", profile.id);
 
       if (updateError) {
         throw updateError;
       }
 
-      setProfile({ ...profile, avatar_url: publicUrl });
+      setProfile({ ...profile, avatar_url: cacheBustedUrl });
       setAvatarMessage("Avatar updated successfully.");
+      router.refresh();
     } catch (err: any) {
       setError(err.message || "Failed to update avatar");
     } finally {
