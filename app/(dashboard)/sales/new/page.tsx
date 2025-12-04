@@ -113,7 +113,10 @@ export default function NewSalePage() {
     } else if (item.product.type === 'size' && item.width && item.height && item.quantity) {
       // Calculate area in cm² (width in cm × height in cm) × quantity
       const areaInCm2 = item.width * item.height;
-      item.item_total = areaInCm2 * item.product.price_per_unit * item.quantity;
+      const rawTotal = areaInCm2 * item.product.price_per_unit * item.quantity;
+      item.item_total = roundToNearestThousand(rawTotal);
+    } else {
+      item.item_total = 0;
     }
 
     setSaleItems(updatedItems);

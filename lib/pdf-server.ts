@@ -218,36 +218,26 @@ export const generateSalePDF = async (sale: Sale): Promise<Uint8Array> => {
       pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
       pdf.text(quantityText, xPos + columnWidths[0] + 10, yPosition + 5, { align: 'center' });
       
-      // Price per unit
+      // Price per unit display
       const unitPrice = product?.price_per_unit || 0;
+      const quantityValue = item.quantity && item.quantity > 0 ? item.quantity : 1;
       let pricePerUnitText = '';
       if (product?.type === 'size') {
-        const width = item.width || 0;
-        const height = item.height || 0;
-        const calculatedPrice = width * height * unitPrice;
-        const roundedPrice = roundUpToNearestThousand(calculatedPrice);
-        pricePerUnitText = `Rp ${roundedPrice.toLocaleString('id-ID')}`;
+        // For size-based products, show effective per-item price: item_total / quantity
+        const perUnit = (item.item_total || 0) / quantityValue;
+        pricePerUnitText = `Rp ${perUnit.toLocaleString('id-ID')}`;
       } else {
+        // For quantity-based products, keep using stored price_per_unit
         pricePerUnitText = `Rp ${unitPrice.toLocaleString('id-ID')}`;
       }
       
       pdf.setFontSize(9);
       pdf.text(pricePerUnitText, xPos + columnWidths[0] + columnWidths[1] + 15, yPosition + 5, { align: 'center' });
       
-      // Amount
+      // Amount (use item_total from database for all item types)
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
-      let finalAmount = 0;
-      if (product?.type === 'size') {
-        const width = item.width || 0;
-        const height = item.height || 0;
-        const quantity = item.quantity || 1;
-        const calculatedPrice = width * height * unitPrice;
-        const roundedPrice = roundUpToNearestThousand(calculatedPrice);
-        finalAmount = roundedPrice * quantity;
-      } else {
-        finalAmount = item.item_total;
-      }
+      const finalAmount = item.item_total || 0;
       pdf.text(`Rp ${finalAmount.toLocaleString('id-ID')}`, xPos + columnWidths[0] + columnWidths[1] + columnWidths[2] + 20, yPosition + 5, { align: 'right' });
       
       yPosition += rowHeight;
