@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
 import { Plus, Eye, Calendar, User, ShoppingCart, Edit, Trash2, Download } from "lucide-react";
 import Link from "next/link";
@@ -37,7 +36,6 @@ interface Sale {
 const ITEMS_PER_PAGE = 10;
 
 export default function SalesPage() {
-  const supabase = createClient();
   
   const [sales, setSales] = useState<Sale[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -57,75 +55,23 @@ export default function SalesPage() {
     setError(null);
 
     try {
-      // Build query with filters
-      let query = supabase.from('sales').select(`
-        id,
-        total_price,
-        created_at,
-        customer_id,
-        customers(name, email, phone),
-        sale_items(
-          id,
-          product_id,
-          quantity,
-          width,
-          height,
-          description,
-          item_total,
-          products(name, type, price_per_unit)
-        )
-      `, { count: 'exact' });
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        ...(selectedYear && { year: selectedYear }),
+        ...(selectedMonth && { month: selectedMonth })
+      });
 
-      // Apply date filters
-      if (selectedYear && selectedMonth) {
-        const startDate = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1, 1);
-        const endDate = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0, 23, 59, 59);
-        
-        query = query
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString());
-      } else if (selectedYear) {
-        const startDate = new Date(parseInt(selectedYear), 0, 1);
-        const endDate = new Date(parseInt(selectedYear), 11, 31, 23, 59, 59);
-        
-        query = query
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString());
+      const response = await fetch(`/api/sales?${params}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch sales');
       }
-
-      // Get filtered data
-      const { data, error, count } = await query
-        .order('created_at', { ascending: false })
-        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
-
-      if (error) throw error;
       
-      // Calculate total sales for the filtered period
-      let totalQuery = supabase.from('sales').select('total_price');
+      const data = await response.json();
       
-      if (selectedYear && selectedMonth) {
-        const startDate = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1, 1);
-        const endDate = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0, 23, 59, 59);
-        
-        totalQuery = totalQuery
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString());
-      } else if (selectedYear) {
-        const startDate = new Date(parseInt(selectedYear), 0, 1);
-        const endDate = new Date(parseInt(selectedYear), 11, 31, 23, 59, 59);
-        
-        totalQuery = totalQuery
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString());
-      }
-
-      const { data: totalData } = await totalQuery;
-      const total = totalData?.reduce((sum, sale) => sum + parseFloat(sale.total_price), 0) || 0;
-      
-      // Two-step type assertion to handle the type mismatch
-      setSales((data || []) as unknown as Sale[]);
-      setTotalCount(count || 0);
-      setTotalSales(total);
+      setSales(data.data || []);
+      setTotalCount(data.totalCount || 0);
+      setTotalSales(data.totalSales || 0);
     } catch (error: any) {
       setError(error.message || 'Failed to fetch sales');
     } finally {
@@ -141,34 +87,13 @@ export default function SalesPage() {
     }
 
     try {
-      // First delete sale items
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('sale_items')
-        .delete()
-        .eq('sale_id', id)
-        .select();
+      const response = await fetch(`/api/sales?id=${id}`, {
+        method: 'DELETE'
+      });
 
-      if (itemsError) {
-        alert("Delete failed: " + itemsError.message);
-        throw itemsError;
-      } else if (!itemsData || itemsData.length === 0) {
-        alert("You don't have permission to delete this data.");
-        throw new Error("Permission denied");
-      }
-
-      // Then delete the sale
-      const { data: saleData, error: saleError } = await supabase
-        .from('sales')
-        .delete()
-        .eq('id', id)
-        .select();
-
-      if (saleError) {
-        alert("Delete failed: " + saleError.message);
-        throw saleError;
-      } else if (!saleData || saleData.length === 0) {
-        alert("You don't have permission to delete this data.");
-        throw new Error("Permission denied");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete sale');
       }
 
       // Refresh the sales list

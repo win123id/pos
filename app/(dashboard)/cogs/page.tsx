@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
 import { 
   TrendingDown, 
@@ -42,7 +41,6 @@ interface COGSItem {
 const ITEMS_PER_PAGE = 10;
 
 export default function COGSPage() {
-  const supabase = createClient();
   
   const [cogsItems, setCOGSItems] = useState<COGSItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -64,138 +62,25 @@ export default function COGSPage() {
     setError(null);
 
     try {
-      // Build query with filters
-      let query = supabase
-        .from('sale_items')
-        .select(`
-          id,
-          sale_id,
-          product_id,
-          quantity,
-          width,
-          height,
-          description,
-          item_total,
-          cost_price,
-          price_per_unit,
-          products!inner(
-            name,
-            type
-          ),
-          sales!inner(
-            id,
-            created_at,
-            customers(name)
-          )
-        `, { count: 'exact' });
-
-      // Apply date filters
-      if (selectedYear && selectedMonth) {
-        const startDate = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1, 1);
-        const endDate = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0, 23, 59, 59);
-        
-        query = query
-          .gte('sales.created_at', startDate.toISOString())
-          .lte('sales.created_at', endDate.toISOString());
-      } else if (selectedYear) {
-        const startDate = new Date(parseInt(selectedYear), 0, 1);
-        const endDate = new Date(parseInt(selectedYear), 11, 31, 23, 59, 59);
-        
-        query = query
-          .gte('sales.created_at', startDate.toISOString())
-          .lte('sales.created_at', endDate.toISOString());
-      }
-
-      // Get filtered data
-      const { data, error, count } = await query
-        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
-
-      if (error) throw error;
-      
-      // Calculate COGS metrics
-      const processedData = (data || []).map((item: any) => {
-        const product = item.products;
-        const costPrice = item.cost_price || 0;  // From sale_items
-        const pricePerUnit = item.price_per_unit || 0;  // From sale_items
-        
-        let unitCost = costPrice;
-        let quantity = item.quantity || 1;
-        
-        // For size-based products, calculate cost based on dimensions
-        if (product.type === 'size') {
-          const width = item.width || 0;
-          const height = item.height || 0;
-          unitCost = width * height * costPrice;
-        }
-        
-        const totalCost = unitCost * quantity;
-        const totalRevenue = item.item_total || 0;
-        
-        return {
-          ...item,
-          unit_cost: unitCost,
-          total_cost: totalCost,
-          total_revenue: totalRevenue
-        };
-      }).sort((a, b) => new Date(b.sales.created_at).getTime() - new Date(a.sales.created_at).getTime());
-      
-      // Calculate totals for the filtered period
-      let totalQuery = supabase
-        .from('sale_items')
-        .select(`
-          quantity,
-          width,
-          height,
-          item_total,
-          cost_price,
-          price_per_unit,
-          products!inner(type),
-          sales!inner(created_at)
-        `);
-      
-      if (selectedYear && selectedMonth) {
-        const startDate = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1, 1);
-        const endDate = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0, 23, 59, 59);
-        
-        totalQuery = totalQuery
-          .gte('sales.created_at', startDate.toISOString())
-          .lte('sales.created_at', endDate.toISOString());
-      } else if (selectedYear) {
-        const startDate = new Date(parseInt(selectedYear), 0, 1);
-        const endDate = new Date(parseInt(selectedYear), 11, 31, 23, 59, 59);
-        
-        totalQuery = totalQuery
-          .gte('sales.created_at', startDate.toISOString())
-          .lte('sales.created_at', endDate.toISOString());
-      }
-
-      const { data: totalData } = await totalQuery;
-      
-      let totalCOGSCalc = 0;
-      let totalRevenueCalc = 0;
-      
-      totalData?.forEach((item: any) => {
-        const costPrice = item.cost_price || 0;  // From sale_items
-        let unitCost = costPrice;
-        let quantity = item.quantity || 1;
-        
-        if (item.products.type === 'size') {
-          const width = item.width || 0;
-          const height = item.height || 0;
-          unitCost = width * height * costPrice;
-        }
-        
-        totalCOGSCalc += unitCost * quantity;
-        totalRevenueCalc += item.item_total || 0;
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        ...(selectedYear && { year: selectedYear }),
+        ...(selectedMonth && { month: selectedMonth })
       });
+
+      const response = await fetch(`/api/cogs?${params}`);
       
-      const grossProfitCalc = totalRevenueCalc - totalCOGSCalc;
+      if (!response.ok) {
+        throw new Error('Failed to fetch COGS data');
+      }
       
-      setCOGSItems(processedData as COGSItem[]);
-      setTotalCount(count || 0);
-      setTotalCOGS(totalCOGSCalc);
-      setTotalRevenue(totalRevenueCalc);
-      setGrossProfit(grossProfitCalc);
+      const data = await response.json();
+      
+      setCOGSItems(data.data || []);
+      setTotalCount(data.totalCount || 0);
+      setTotalCOGS(data.totalCOGS || 0);
+      setTotalRevenue(data.totalRevenue || 0);
+      setGrossProfit(data.grossProfit || 0);
     } catch (error: any) {
       setError(error.message || 'Failed to fetch COGS data');
     } finally {

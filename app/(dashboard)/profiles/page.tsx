@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 
 interface Profile {
   id: string;
@@ -35,36 +34,16 @@ export default function ProfilesPage() {
         setIsLoading(true);
         setError(null);
 
-        const supabase = createClient();
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-          throw new Error(userError?.message || "No authenticated user");
+        const response = await fetch('/api/profiles');
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch profile');
         }
-
-        const { data: profileRow, error: profileError } = await supabase
-          .from("profiles")
-          .select("full_name, role, created_at, avatar_url")
-          .eq("id", user.id)
-          .single();
-
-        if (profileError) {
-          throw profileError;
-        }
-
-        setProfile({
-          id: user.id,
-          email: user.email || "No email",
-          full_name: profileRow?.full_name || undefined,
-          role: (profileRow?.role as "admin" | "user") || "user",
-          created_at: profileRow?.created_at || new Date().toISOString(),
-          avatar_url: profileRow?.avatar_url || null,
-        });
-
-        setName(profileRow?.full_name || "");
+        
+        const data = await response.json();
+        setProfile(data.profile);
+        setName(data.profile?.full_name || "");
       } catch (err: any) {
         setError(err.message || "Failed to load profile");
       } finally {
@@ -88,14 +67,18 @@ export default function ProfilesPage() {
       setError(null);
       setSaveMessage(null);
 
-      const supabase = createClient();
+      const response = await fetch('/api/profiles', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ full_name: name })
+      });
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ full_name: name })
-        .eq("id", profile.id);
-
-      if (updateError) throw updateError;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
 
       setProfile({ ...profile, full_name: name || undefined });
       setSaveMessage("Profile updated successfully.");
@@ -115,47 +98,21 @@ export default function ProfilesPage() {
       setAvatarMessage(null);
       setError(null);
 
-      // Basic validation
-      const maxSizeBytes = 2 * 1024 * 1024; // 2MB
-      if (file.size > maxSizeBytes) {
-        throw new Error("Avatar must be smaller than 2MB.");
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await fetch('/api/profiles', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update avatar');
       }
 
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-      if (!allowedTypes.includes(file.type)) {
-        throw new Error("Avatar must be a JPG, PNG, or WebP image.");
-      }
-
-      const supabase = createClient();
-
-      const fileExt = file.name.split(".").pop() || "jpg";
-      const filePath = `${profile.id}/avatar.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, {
-          cacheControl: "0",
-          upsert: true,
-        });
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath);
-      const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: cacheBustedUrl })
-        .eq("id", profile.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      setProfile({ ...profile, avatar_url: cacheBustedUrl });
+      const data = await response.json();
+      setProfile({ ...profile, avatar_url: data.avatar_url });
       setAvatarMessage("Avatar updated successfully.");
       router.refresh();
     } catch (err: any) {

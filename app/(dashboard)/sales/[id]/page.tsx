@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
 import { ArrowLeft, Calendar, User, Package, FileText } from "lucide-react";
 import Link from "next/link";
@@ -35,7 +34,6 @@ interface Sale {
 export default function SaleDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
   
   const [sale, setSale] = useState<Sale | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,22 +48,15 @@ export default function SaleDetailPage() {
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          customers(name, email, phone, address),
-          sale_items(
-            *,
-            products(name, type)
-          )
-        `)
-        .eq('id', params.id)
-        .single();
-
-      if (error) throw error;
+      const response = await fetch(`/api/sales/${params.id}`);
       
-      setSale(data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch sale details');
+      }
+      
+      const data = await response.json();
+      setSale(data.data);
     } catch (error: any) {
       setError(error.message || 'Failed to fetch sale details');
       console.error('Sale detail error:', error);

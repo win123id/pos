@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +37,6 @@ interface SaleItem {
 
 export default function NewSalePage() {
   const router = useRouter();
-  const supabase = createClient();
   
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -52,18 +50,21 @@ export default function NewSalePage() {
   }, []);
 
   const fetchData = async () => {
-    const { data: productsData } = await supabase
-      .from('products')
-      .select('*')
-      .order('name');
-    
-    const { data: customersData } = await supabase
-      .from('customers')
-      .select('*')
-      .order('name');
+    try {
+      const [productsRes, customersRes] = await Promise.all([
+        fetch("/api/products"),
+        fetch("/api/customers")
+      ]);
 
-    setProducts(productsData || []);
-    setCustomers(customersData || []);
+      const productsJson = await productsRes.json();
+      const customersJson = await customersRes.json();
+
+      setProducts(productsJson.data || []);
+      setCustomers(customersJson.data || []);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load products or customers");
+    }
   };
 
   const addSaleItem = () => {
@@ -144,38 +145,21 @@ export default function NewSalePage() {
     setError(null);
 
     try {
-      const total = calculateTotal();
-      
-      // Create sale
-      const { data: saleData, error: saleError } = await supabase
-        .from('sales')
-        .insert({
-          total_price: total,
-          customer_id: selectedCustomerId !== "none" ? parseInt(selectedCustomerId) : null
+      const response = await fetch('/api/sales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customer_id: selectedCustomerId !== "none" ? parseInt(selectedCustomerId) : null,
+          items: saleItems
         })
-        .select()
-        .single();
+      });
 
-      if (saleError) throw saleError;
-
-      // Create sale items
-      const saleItemsToInsert = saleItems.map(item => ({
-        sale_id: saleData.id,
-        product_id: item.product_id,
-        quantity: item.quantity || null,
-        width: item.width || null,
-        height: item.height || null,
-        item_total: item.item_total,
-        description: item.description || null,
-        cost_price: item.product.cost_price || null,
-        price_per_unit: item.product.price_per_unit
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('sale_items')
-        .insert(saleItemsToInsert);
-
-      if (itemsError) throw itemsError;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save sale');
+      }
 
       router.push('/sales');
     } catch (error: any) {

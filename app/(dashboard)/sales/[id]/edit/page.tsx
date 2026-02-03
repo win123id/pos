@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +56,7 @@ const roundToNearestThousand = (amount: number) => {
 export default function EditSalePage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
+  
   
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -76,67 +75,58 @@ export default function EditSalePage() {
 
   const fetchSaleData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          customers(name, email, phone),
-          sale_items(
-            *,
-            products(name, type, price_per_unit, cost_price)
-          )
-        `)
-        .eq('id', params.id)
-        .single();
+      const res = await fetch(`/api/sales/${params.id}`);
+      const json = await res.json();
 
-      if (error) throw error;
-      
+      if (!res.ok) throw new Error(json.error);
+
+      const data = json.data;
+
       setOriginalSale(data);
       setSelectedCustomerId(data.customer_id?.toString() || "none");
-      
-      // Transform sale items to the expected format
+
       const transformedItems = data.sale_items?.map((item: any) => ({
         id: item.id,
         product_id: item.product_id,
-        product: {
-          id: item.products.id,
-          name: item.products.name,
-          type: item.products.type,
-          price_per_unit: item.products.price_per_unit,
-          cost_price: item.products.cost_price
-        },
+        product: item.products,
         quantity: item.quantity,
         width: item.width,
         height: item.height,
         description: item.description || '',
         item_total: item.item_total
       })) || [];
-      
+
       setSaleItems(transformedItems);
+
     } catch (error: any) {
       setError(error.message || 'Failed to fetch sale data');
     }
   };
 
   const fetchProductsAndCustomers = async () => {
-    const { data: productsData } = await supabase
-      .from('products')
-      .select('*')
-      .order('name');
-    
-    const { data: customersData } = await supabase
-      .from('customers')
-      .select('*')
-      .order('name');
+  try {
+    const [productsRes, customersRes] = await Promise.all([
+      fetch("/api/products"),
+      fetch("/api/customers")
+    ]);
 
-    setProducts(productsData || []);
-    setCustomers(customersData || []);
-  };
+    const productsJson = await productsRes.json();
+    const customersJson = await customersRes.json();
+
+    setProducts(productsJson.data || []);
+    setCustomers(customersJson.data || []);
+  } catch (err) {
+    console.error(err);
+    setError("Failed to load products or customers");
+  }
+};
+
 
   const addSaleItem = () => {
     if (products.length === 0) return;
-    
+
     const firstProduct = products[0];
+
     const newItem: SaleItem = {
       product_id: firstProduct.id,
       product: firstProduct,
@@ -146,20 +136,20 @@ export default function EditSalePage() {
       description: '',
       item_total: 0
     };
+
     setSaleItems([...saleItems, newItem]);
   };
 
   const updateSaleItem = (index: number, field: keyof SaleItem, value: any) => {
     const updatedItems = [...saleItems];
     const item = updatedItems[index];
-    
+
     if (field === 'product_id') {
       const product = products.find(p => p.id === parseInt(value));
       if (product) {
         item.product = product;
         item.product_id = product.id;
-        
-        // Reset dimensions based on product type
+
         if (product.type === 'quantity') {
           item.quantity = 1;
           item.width = undefined;
@@ -174,11 +164,9 @@ export default function EditSalePage() {
       (item as any)[field] = value;
     }
 
-    // Calculate item total
     if (item.product.type === 'quantity' && item.quantity) {
       item.item_total = item.quantity * item.product.price_per_unit;
     } else if (item.product.type === 'size' && item.width && item.height && item.quantity) {
-      // Calculate area in cm² (width in cm × height in cm) × quantity
       const areaInCm2 = item.width * item.height;
       const rawTotal = areaInCm2 * item.product.price_per_unit * item.quantity;
       item.item_total = roundToNearestThousand(rawTotal);
@@ -207,47 +195,17 @@ export default function EditSalePage() {
     setError(null);
 
     try {
-      const total = calculateTotal();
-      
-      // Update sale
-      const { error: saleError } = await supabase
-        .from('sales')
-        .update({
-          total_price: total,
-          customer_id: selectedCustomerId !== "none" ? parseInt(selectedCustomerId) : null
+      await fetch(`/api/sales/${params.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_id: selectedCustomerId !== "none" ? parseInt(selectedCustomerId) : null,
+          items: saleItems
         })
-        .eq('id', params.id);
-
-      if (saleError) throw saleError;
-
-      // Delete existing sale items
-      const { error: deleteError } = await supabase
-        .from('sale_items')
-        .delete()
-        .eq('sale_id', params.id);
-
-      if (deleteError) throw deleteError;
-
-      // Create new sale items
-      const saleItemsToInsert = saleItems.map(item => ({
-        sale_id: parseInt(params.id as string),
-        product_id: item.product_id,
-        quantity: item.quantity || null,
-        width: item.width || null,
-        height: item.height || null,
-        item_total: item.item_total,
-        description: item.description || null,
-        cost_price: item.product.cost_price || null,
-        price_per_unit: item.product.price_per_unit
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('sale_items')
-        .insert(saleItemsToInsert);
-
-      if (itemsError) throw itemsError;
+      });
 
       router.push('/sales');
+
     } catch (error: any) {
       setError(error.message || 'Failed to update sale');
     } finally {

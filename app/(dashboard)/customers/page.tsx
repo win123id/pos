@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +20,6 @@ interface Customer {
 const ITEMS_PER_PAGE = 9;
 
 export default function CustomersPage() {
-  const supabase = createClient();
   
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -47,22 +45,20 @@ export default function CustomersPage() {
     setError(null);
 
     try {
-      // Get total count
-      const { count } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact', head: true });
+      const params = new URLSearchParams({
+        page: currentPage.toString()
+      });
 
-      // Fetch paginated customers
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
-
-      if (error) throw error;
+      const response = await fetch(`/api/customers?${params}`);
       
-      setCustomers(data || []);
-      setTotalCount(count || 0);
+      if (!response.ok) {
+        throw new Error('Failed to fetch customers');
+      }
+      
+      const data = await response.json();
+      
+      setCustomers(data.data || []);
+      setTotalCount(data.totalCount || 0);
     } catch (error: any) {
       setError(error.message || 'Failed to fetch customers');
     } finally {
@@ -94,26 +90,31 @@ export default function CustomersPage() {
         address: formData.address || null
       };
 
+      let response;
       if (editingCustomer) {
-        const { data, error } = await supabase
-          .from('customers')
-          .update(submitData)
-          .eq('id', editingCustomer.id)
-          .select();
-        
-        if (error) {
-          alert("Update failed: " + error.message);
-          throw error;
-        } else if (!data || data.length === 0) {
-          alert("You don't have permission to update this data.");
-          throw new Error("Permission denied");
-        }
+        response = await fetch('/api/customers', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: editingCustomer.id,
+            ...submitData
+          })
+        });
       } else {
-        const { error } = await supabase
-          .from('customers')
-          .insert(submitData);
-        
-        if (error) throw error;
+        response = await fetch('/api/customers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(submitData)
+        });
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save customer');
       }
 
       await fetchCustomers();
@@ -140,19 +141,15 @@ export default function CustomersPage() {
     if (!confirm('Are you sure you want to delete this customer?')) return;
 
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', id)
-        .select();
+      const response = await fetch(`/api/customers?id=${id}`, {
+        method: 'DELETE'
+      });
 
-      if (error) {
-        alert("Delete failed: " + error.message);
-        throw error;
-      } else if (!data || data.length === 0) {
-        alert("You don't have permission to delete this data.");
-        throw new Error("Permission denied");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete customer');
       }
+      
       await fetchCustomers();
     } catch (error: any) {
       setError(error.message || 'Failed to delete customer');

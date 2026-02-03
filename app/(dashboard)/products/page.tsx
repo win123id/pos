@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,6 @@ interface Product {
 const ITEMS_PER_PAGE = 10;
 
 export default function ProductsPage() {
-  const supabase = createClient();
   
   const [products, setProducts] = useState<Product[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -48,22 +46,20 @@ export default function ProductsPage() {
     setError(null);
 
     try {
-      // Get total count
-      const { count } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true });
+      const params = new URLSearchParams({
+        page: currentPage.toString()
+      });
 
-      // Fetch paginated products
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
-
-      if (error) throw error;
+      const response = await fetch(`/api/products?${params}`);
       
-      setProducts(data || []);
-      setTotalCount(count || 0);
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      
+      const data = await response.json();
+      
+      setProducts(data.data || []);
+      setTotalCount(data.totalCount || 0);
     } catch (error: any) {
       setError(error.message || 'Failed to fetch products');
     } finally {
@@ -95,26 +91,31 @@ export default function ProductsPage() {
         cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null
       };
 
+      let response;
       if (editingProduct) {
-        const { data, error } = await supabase
-          .from('products')
-          .update(submitData)
-          .eq('id', editingProduct.id)
-          .select();
-        
-        if (error) {
-          alert("Update failed: " + error.message);
-          throw error;
-        } else if (!data || data.length === 0) {
-          alert("You don't have permission to update this data.");
-          throw new Error("Permission denied");
-        }
+        response = await fetch('/api/products', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: editingProduct.id,
+            ...submitData
+          })
+        });
       } else {
-        const { error } = await supabase
-          .from('products')
-          .insert(submitData);
-        
-        if (error) throw error;
+        response = await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(submitData)
+        });
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save product');
       }
 
       await fetchProducts();
@@ -141,19 +142,15 @@ export default function ProductsPage() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id)
-        .select();
+      const response = await fetch(`/api/products?id=${id}`, {
+        method: 'DELETE'
+      });
 
-      if (error) {
-        alert("Delete failed: " + error.message);
-        throw error;
-      } else if (!data || data.length === 0) {
-        alert("You don't have permission to delete this data.");
-        throw new Error("Permission denied");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete product');
       }
+      
       await fetchProducts();
     } catch (error: any) {
       setError(error.message || 'Failed to delete product');
