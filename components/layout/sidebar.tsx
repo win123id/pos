@@ -11,11 +11,8 @@ import {
   Home, 
   LogOut, 
   TrendingUp,
-  ChartCandlestick,
   Menu,
   X,
-  ChevronLeft,
-  ChevronRight,
   UserCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,7 +27,6 @@ const navigation = [
   { name: "Products", href: "/products", icon: Package, adminOnly: true },
   { name: "Customers", href: "/customers", icon: Users, adminOnly: true },
   { name: "COGS", href: "/cogs", icon: TrendingUp, adminOnly: true },
-  { name: "Stock Pick", href: "/stock-pick", icon: ChartCandlestick, adminOnly: false },
   { name: "My Profile", href: "/profiles", icon: UserCog, adminOnly: false },
   { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
 ];
