@@ -124,7 +124,9 @@ export default function SalesPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        // Log error to console but don't show popup to user
+        console.error('Failed to generate PDF:', response.status, response.statusText);
+        return;
       }
 
       // Get PDF blob
@@ -153,8 +155,8 @@ export default function SalesPage() {
       }
 
     } catch (error: any) {
+      // Log error to console but suppress popup
       console.error('Failed to generate PDF:', error);
-      alert(`Failed to generate PDF: ${error.message}`);
     } finally {
       // Restore button state (keep the original icon)
       if (downloadButton) {
