@@ -77,7 +77,7 @@ export function LoginForm({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} method="post">
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
