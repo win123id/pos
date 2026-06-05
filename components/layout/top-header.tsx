@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Sidebar, PanelLeftClose } from "lucide-react";
+import { ChevronDown, LogOut, Sidebar, PanelLeftClose } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { cn } from "@/lib/utils";
 import {
@@ -55,12 +55,14 @@ export function TopHeader({ isSidebarCollapsed = false, onToggleSidebar }: TopHe
 
   return (
     <header className="w-full bg-muted/30 backdrop-blur-sm">
-      <div className="container flex h-16 items-center justify-between px-4">
+      <div
+        className={cn(
+          "flex h-16 items-center gap-3 px-4 lg:px-8 transition-all duration-300 ease-in-out",
+          isSidebarCollapsed ? "lg:ml-16" : "lg:ml-64",
+        )}
+      >
         {/* Left side - sidebar toggle */}
-        <div className={cn(
-          "flex items-center gap-2 transition-all duration-300 ease-in-out hidden lg:flex",
-          isSidebarCollapsed ? "pl-16" : "pl-64"
-        )}>
+        <div className="hidden items-center gap-2 lg:flex">
           <Button
             variant="ghost"
             size="sm"
@@ -73,25 +75,31 @@ export function TopHeader({ isSidebarCollapsed = false, onToggleSidebar }: TopHe
         </div>
         
         {/* Right side - theme switcher and avatar dropdown */}
-        <div className="flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center text-xs font-medium border border-border focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                className="flex items-center gap-2 rounded-full border border-border bg-muted px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               >
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarUrl}
-                    alt={displayName || "Avatar"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span>
-                    {(displayName || "?").charAt(0).toUpperCase()}
-                  </span>
-                )}
+                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-medium">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarUrl}
+                      alt={displayName || "Avatar"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {(displayName || "?").charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+                <span className="hidden max-w-32 truncate text-sm lg:inline-block">
+                  {displayName || "User"}
+                </span>
+                <ChevronDown className="hidden h-4 w-4 text-muted-foreground lg:block" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
