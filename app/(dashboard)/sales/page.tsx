@@ -115,7 +115,7 @@ export default function SalesPage() {
       }
 
       // Call server-side PDF generation API
-      const response = await fetch('/api/generate-pdf', {
+      const response = await fetch(`/api/generate-pdf?saleId=${sale.id}&t=${Date.now()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -155,7 +155,12 @@ export default function SalesPage() {
       }
 
     } catch (error: any) {
-      // Log error to console but suppress popup
+      // Download managers can intercept the request before fetch completes.
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        return;
+      }
+
+      // Log unexpected errors to console but suppress popup
       console.error('Failed to generate PDF:', error);
     } finally {
       // Restore button state (keep the original icon)

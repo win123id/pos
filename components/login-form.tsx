@@ -1,7 +1,8 @@
 "use client";
 
+import { useActionState } from "react";
+
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,57 +13,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { login, type LoginFormState } from "@/app/(auth)/auth/login/actions";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Sign in the user
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-
-      // Get user role from profiles table
-      if (authData.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', authData.user.id)
-          .single();
-
-        const userRole = profile?.role || 'user';
-        
-        // Redirect based on user role
-        if (userRole === 'user') {
-          router.push('/stock-pick');
-        } else {
-          router.push('/');
-        }
-      }
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const initialState: LoginFormState = { error: null };
+  const [state, formAction, isPending] = useActionState(login, initialState);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -77,17 +36,16 @@ export function LoginForm({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={handleLogin} method="post">
+          <form action={formAction}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="m@example.com"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   className="bg-background text-foreground border-input"
                 />
               </div>
@@ -103,16 +61,15 @@ export function LoginForm({
                 </div>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   className="bg-background text-foreground border-input"
                 />
               </div>
-              {error && <p className="text-sm text-destructive font-medium">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
+              {state.error && <p className="text-sm text-destructive font-medium">{state.error}</p>}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Logging in..." : "Login"}
               </Button>
             </div>
           </form>

@@ -11,8 +11,12 @@ import { AdminAccessError } from "@/components/admin-access-error";
 export default async function Home() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.getClaims();
-  if (error || !data?.claims) {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
     redirect("/auth/login");
   }
 
@@ -244,9 +248,9 @@ export default async function Home() {
         </CardHeader>
         <CardContent>
           <div className="text-sm space-y-2">
-            <p><strong>Email:</strong> {data.claims.email || 'N/A'}</p>
-            <p><strong>User ID:</strong> {data.claims.sub || 'N/A'}</p>
-            <p><strong>Last Sign In:</strong> {new Date(data.claims.iat * 1000).toLocaleString()}</p>
+            <p><strong>Email:</strong> {user.email || 'N/A'}</p>
+            <p><strong>User ID:</strong> {user.id || 'N/A'}</p>
+            <p><strong>Last Sign In:</strong> {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'N/A'}</p>
           </div>
         </CardContent>
       </Card>

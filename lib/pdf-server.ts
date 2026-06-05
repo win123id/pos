@@ -132,10 +132,6 @@ export const generateSalePDF = async (sale: Sale): Promise<Uint8Array> => {
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-  pdf.text(`Invoice #`, detailsX, detailsY);
-  pdf.text(`${String(sale.id).padStart(6, '0')}`, detailsX + 35, detailsY);
-  
-  detailsY += 6;
   pdf.text(`Date`, detailsX, detailsY);
   pdf.text(`${new Date(sale.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`, detailsX + 35, detailsY);
   

@@ -23,7 +23,7 @@ export function AdminAccessError() {
         </CardHeader>
         <CardContent>
           <Button asChild>
-            <Link href="/dashboard">Back to Dashboard</Link>
+            <Link href="/">Back to Dashboard</Link>
           </Button>
         </CardContent>
       </Card>

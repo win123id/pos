@@ -38,14 +38,9 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (
     !user &&
@@ -67,12 +62,12 @@ export async function updateSession(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', user.sub)
+      .eq('id', user.id)
       .single();
 
     if (!profile || profile.role !== 'admin') {
       const url = request.nextUrl.clone();
-      url.pathname = '/stock-pick';
+      url.pathname = '/profiles';
       url.searchParams.set('error', 'admin_required');
       return NextResponse.redirect(url);
     }
