@@ -54,7 +54,7 @@ export function TopHeader({ isSidebarCollapsed = false, onToggleSidebar }: TopHe
   };
 
   return (
-    <header className="w-full bg-muted/30 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 w-full border-b border-border/35 bg-background/70 backdrop-blur-md">
       <div
         className={cn(
           "flex h-16 items-center gap-3 px-4 lg:px-8 transition-all duration-300 ease-in-out",
@@ -80,9 +80,9 @@ export function TopHeader({ isSidebarCollapsed = false, onToggleSidebar }: TopHe
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-full border border-border bg-muted px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                className="flex items-center gap-2 rounded-full border border-border/80 bg-card/80 px-2 py-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               >
-                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-medium">
+                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-accent text-xs font-medium">
                   {avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

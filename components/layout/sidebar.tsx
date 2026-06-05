@@ -102,14 +102,14 @@ export function Sidebar({ className, isCollapsed = false, onCollapseChange }: Si
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed left-0 top-0 z-50 h-screen bg-background border-r transition-all duration-300 ease-in-out flex-shrink-0",
+        "fixed left-0 top-0 z-50 h-screen border-r border-border/40 bg-background/95 transition-all duration-300 ease-in-out flex-shrink-0 backdrop-blur-md",
         isCollapsed ? "w-16" : "w-64",
         isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         className
       )}>
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex h-16 items-center justify-between border-b border-border px-4">
+          <div className="flex h-16 items-center justify-between border-b border-border/40 px-4">
             {!isCollapsed && (
               <Link href="/" className="flex items-center gap-2 group">
                 <img
@@ -131,15 +131,18 @@ export function Sidebar({ className, isCollapsed = false, onCollapseChange }: Si
                 const isActive = pathname === item.href;
                 return (
                   <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setIsMobileOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent",
+                     key={item.name}
+                     href={item.href}
+                     onClick={() => setIsMobileOpen(false)}
+                     className={cn(
+                      "flex items-center rounded-lg text-sm font-medium transition-all duration-200 hover:bg-accent",
+                      isCollapsed
+                        ? "mx-auto h-10 w-10 justify-center px-0 py-0"
+                        : "gap-3 px-3 py-2",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
-                    )}
+                     )}
                   >
                     <item.icon className="h-4 w-4 flex-shrink-0" />
                     {!isCollapsed && (
@@ -159,7 +162,7 @@ export function Sidebar({ className, isCollapsed = false, onCollapseChange }: Si
           </nav>
 
           {/* Footer with Sign Out */}
-          <div className="border-t border-border p-4">
+          <div className="border-t border-border/40 p-4">
             <Button
               variant="ghost"
               onClick={handleSignOut}
