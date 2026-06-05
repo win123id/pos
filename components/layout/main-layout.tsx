@@ -1,5 +1,6 @@
 "use client";
 
+import { IdleLogout } from "@/components/idle-logout";
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { TopHeader } from "./top-header";
@@ -18,6 +19,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="min-h-screen flex">
+      <IdleLogout />
       <Sidebar 
             isCollapsed={isSidebarCollapsed}
             onCollapseChange={handleSidebarCollapseChange}
