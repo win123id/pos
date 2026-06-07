@@ -2,6 +2,14 @@ import { requireAdmin } from '@/lib/authz/require-admin'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
+async function bestEffortDeleteAuthUser(userId: string) {
+  try {
+    await supabaseAdmin.auth.admin.deleteUser(userId)
+  } catch {
+    // Ignore rollback failures so the original profile sync error can surface.
+  }
+}
+
 export async function GET() {
   try {
     const auth = await requireAdmin()
@@ -52,29 +60,73 @@ export async function POST(request: Request) {
 
     const { email, password, fullName, role } = await request.json();
 
+    if (!email?.trim()) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    }
+
+    if (!password?.trim()) {
+      return NextResponse.json({ error: 'Password is required' }, { status: 400 })
+    }
+
+    if (role !== 'admin' && role !== 'user') {
+      return NextResponse.json({ error: 'A valid role is required' }, { status: 400 })
+    }
+
+    const normalizedFullName = fullName?.trim() || null
+
     // Create user
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: email.trim(),
       password,
       email_confirm: true
     });
 
     if (error) throw error;
 
-    // Update the profile created by trigger with full_name and role
-    if (data.user) {
+    if (!data.user) {
+      throw new Error('User creation returned no user')
+    }
+
+    const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('id', data.user.id)
+      .maybeSingle()
+
+    if (existingProfileError) {
+      await bestEffortDeleteAuthUser(data.user.id)
+      throw existingProfileError
+    }
+
+    if (existingProfile) {
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({
-          full_name: fullName,
+          full_name: normalizedFullName,
           role: role
         })
         .eq('id', data.user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        await bestEffortDeleteAuthUser(data.user.id)
+        throw profileError
+      }
+    } else {
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          full_name: normalizedFullName,
+          role,
+        })
+
+      if (profileError) {
+        await bestEffortDeleteAuthUser(data.user.id)
+        throw profileError
+      }
     }
 
-    return NextResponse.json({ data: { success: true } });
+    return NextResponse.json({ data: { success: true, userId: data.user.id } });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
