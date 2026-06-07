@@ -2,39 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { formatRupiah } from "@/lib/currency";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
+import { SaleCustomerSelect } from "@/app/(dashboard)/sales/_components/sale-customer-select";
+import { SaleItemsEditor } from "@/app/(dashboard)/sales/_components/sale-items-editor";
+import { SaleSummaryCard } from "@/app/(dashboard)/sales/_components/sale-summary-card";
+import {
+  calculateSaleItemsTotal,
+  createEmptySaleItem,
+  Customer,
+  Product,
+  recalculateSaleItem,
+  SaleItemForm,
+  setSaleItemProduct,
+} from "@/lib/sales/client-editor";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-
-interface Product {
-  id: number;
-  name: string;
-  type: 'size' | 'quantity';
-  price_per_unit: number;
-  cost_price?: number;
-}
-
-interface Customer {
-  id: number;
-  name: string;
-  email?: string;
-  phone?: string;
-}
-
-interface SaleItem {
-  id?: number;
-  product_id: number;
-  product: Product;
-  quantity?: number;
-  width?: number;
-  height?: number;
-  description: string;
-  item_total: number;
-}
 
 interface Sale {
   id: number;
@@ -46,12 +27,8 @@ interface Sale {
     email?: string;
     phone?: string;
   } | null;
-  sale_items?: SaleItem[];
+  sale_items?: SaleItemForm[];
 }
-
-const roundToNearestThousand = (amount: number) => {
-  return amount % 1000 === 0 ? amount : Math.ceil(amount / 1000) * 1000;
-};
 
 export default function EditSalePage() {
   const params = useParams();
@@ -61,7 +38,7 @@ export default function EditSalePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("none");
-  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  const [saleItems, setSaleItems] = useState<SaleItemForm[]>([]);
   const [originalSale, setOriginalSale] = useState<Sale | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,56 +101,32 @@ export default function EditSalePage() {
 
   const addSaleItem = () => {
     if (products.length === 0) return;
-
-    const firstProduct = products[0];
-
-    const newItem: SaleItem = {
-      product_id: firstProduct.id,
-      product: firstProduct,
-      quantity: firstProduct.type === 'quantity' ? 1 : undefined,
-      width: firstProduct.type === 'size' ? 0 : undefined,
-      height: firstProduct.type === 'size' ? 0 : undefined,
-      description: '',
-      item_total: 0
-    };
-
-    setSaleItems([...saleItems, newItem]);
+    setSaleItems([...saleItems, createEmptySaleItem(products[0])]);
   };
 
-  const updateSaleItem = (index: number, field: keyof SaleItem, value: any) => {
+  const updateSaleItem = (index: number, field: keyof SaleItemForm, value: string | number) => {
     const updatedItems = [...saleItems];
-    const item = updatedItems[index];
+    let item = { ...updatedItems[index] };
 
     if (field === 'product_id') {
-      const product = products.find(p => p.id === parseInt(value));
+      const productId = typeof value === "string" ? parseInt(value, 10) : Number(value);
+      const product = products.find((p) => p.id === productId);
       if (product) {
-        item.product = product;
-        item.product_id = product.id;
-
-        if (product.type === 'quantity') {
-          item.quantity = 1;
-          item.width = undefined;
-          item.height = undefined;
-        } else {
-          item.width = 0;
-          item.height = 0;
-          item.quantity = undefined;
-        }
+        item = setSaleItemProduct(item, product);
       }
     } else {
-      (item as any)[field] = value;
+      if (field === "description") {
+        item.description = String(value);
+      }
+
+      if (field === "quantity" || field === "width" || field === "height") {
+        item[field] = Number(value);
+      }
+
+      item = recalculateSaleItem(item);
     }
 
-    if (item.product.type === 'quantity' && item.quantity) {
-      item.item_total = item.quantity * item.product.price_per_unit;
-    } else if (item.product.type === 'size' && item.width && item.height && item.quantity) {
-      const areaInCm2 = item.width * item.height;
-      const rawTotal = areaInCm2 * item.product.price_per_unit * item.quantity;
-      item.item_total = roundToNearestThousand(rawTotal);
-    } else {
-      item.item_total = 0;
-    }
-
+    updatedItems[index] = item;
     setSaleItems(updatedItems);
   };
 
@@ -182,7 +135,7 @@ export default function EditSalePage() {
   };
 
   const calculateTotal = () => {
-    return saleItems.reduce((sum, item) => sum + item.item_total, 0);
+    return calculateSaleItemsTotal(saleItems);
   };
 
   const handleUpdateSale = async () => {
@@ -280,178 +233,31 @@ export default function EditSalePage() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
-          {/* Customer Selection */}
-          <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-6">Customer Information</h2>
-            <div className="grid gap-2">
-              <Label htmlFor="customer">Customer (Optional)</Label>
-              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select customer or leave empty for walk-in" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Walk-in Customer</SelectItem>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id.toString()}>
-                      {customer.name} {customer.phone && `(${customer.phone})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <SaleCustomerSelect
+            customers={customers}
+            selectedCustomerId={selectedCustomerId}
+            onChange={setSelectedCustomerId}
+          />
 
-          {/* Sale Items */}
-          <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Sale Items</h2>
-              <Button onClick={addSaleItem} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
-            </div>
-
-            {saleItems.length > 0 ? (
-              <div className="space-y-6">
-                {saleItems.map((item, index) => (
-                  <div key={index} className="border rounded-lg p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">Item {index + 1}</h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeSaleItem(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="grid gap-6 md:grid-cols-2">
-                      <div className="grid gap-2">
-                        <Label>Product</Label>
-                        <Select
-                          value={item.product_id.toString()}
-                          onValueChange={(value) => updateSaleItem(index, 'product_id', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id.toString()}>
-                                {product.name} ({formatRupiah(product.price_per_unit)}/{product.type === 'size' ? 'cm²' : 'unit'})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {item.product.type === 'quantity' ? (
-                        <div className="grid gap-2">
-                          <Label>Quantity</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity || 1}
-                            onChange={(e) => updateSaleItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                          />
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid gap-2">
-                            <Label>Width (cm)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.1"
-                              value={item.width || 0}
-                              onChange={(e) => updateSaleItem(index, 'width', parseFloat(e.target.value) || 0)}
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label>Height (cm)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.1"
-                              value={item.height || 0}
-                              onChange={(e) => updateSaleItem(index, 'height', parseFloat(e.target.value) || 0)}
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label>Quantity</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity || 1}
-                              onChange={(e) => updateSaleItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label>Description (Optional)</Label>
-                      <Input
-                        value={item.description || ''}
-                        onChange={(e) => updateSaleItem(index, 'description', e.target.value)}
-                        placeholder="Add notes or description..."
-                      />
-                    </div>
-
-                    <div className="flex justify-between items-center pt-4 border-t">
-                      <div>
-                        <span className="font-semibold text-lg">Item Total:</span>
-                        {item.product.type === 'size' && item.width && item.height && (
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {item.width}cm × {item.height}cm = {(item.width * item.height).toLocaleString('id-ID')}cm² × {formatRupiah(item.product.price_per_unit)}/cm²
-                          </div>
-                        )}
-                        {item.product.type === 'quantity' && item.quantity && (
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {item.quantity} × {formatRupiah(item.product.price_per_unit)}/unit
-                          </div>
-                        )}
-                      </div>
-                      <span className="font-bold text-xl text-primary">
-                        {formatRupiah(item.item_total)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p>No items added. Click "Add Item" to get started.</p>
-              </div>
-            )}
-          </div>
+          <SaleItemsEditor
+            products={products}
+            saleItems={saleItems}
+            emptyMessage='No items added. Click "Add Item" to get started.'
+            onAddItem={addSaleItem}
+            onRemoveItem={removeSaleItem}
+            onUpdateItem={updateSaleItem}
+          />
         </div>
 
-        {/* Summary */}
         <div className="space-y-8">
-          <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 sticky top-24">
-            <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span>{formatRupiah(calculateTotal())}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold pt-4 border-t">
-                <span>Total:</span>
-                <span className="text-primary">{formatRupiah(calculateTotal())}</span>
-              </div>
-              <Button 
-                onClick={handleUpdateSale}
-                className="w-full" 
-                disabled={isLoading || saleItems.length === 0}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Updating...' : 'Update Sale'}
-              </Button>
-            </div>
-          </div>
+          <SaleSummaryCard
+            total={calculateTotal()}
+            isLoading={isLoading}
+            disabled={saleItems.length === 0}
+            submitLabel="Update Sale"
+            loadingLabel="Updating..."
+            onSubmit={handleUpdateSale}
+          />
         </div>
       </div>
         </div>
