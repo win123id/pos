@@ -1,3 +1,8 @@
+import {
+  ensureAdminMutationResult,
+  handleAdminMutationError,
+} from "@/lib/api/admin-mutation";
+import { getPage, getRange, getTotalPages } from "@/lib/api/pagination";
 import { requireAdmin } from "@/lib/authz/require-admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -11,8 +16,8 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
-    
-    const page = parseInt(searchParams.get('page') || '1');
+    const page = getPage(searchParams);
+    const { from, to } = getRange(page, ITEMS_PER_PAGE);
 
     // Get total count
     const { count } = await supabase
@@ -24,7 +29,7 @@ export async function GET(request: NextRequest) {
       .from('products')
       .select('*')
       .order('created_at', { ascending: false })
-      .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
+      .range(from, to);
 
     if (error) throw error;
     
@@ -32,7 +37,7 @@ export async function GET(request: NextRequest) {
       data: data || [],
       totalCount: count || 0,
       currentPage: page,
-      totalPages: Math.ceil((count || 0) / ITEMS_PER_PAGE)
+      totalPages: getTotalPages(count, ITEMS_PER_PAGE)
     });
 
   } catch (error: any) {
@@ -154,22 +159,12 @@ export async function PUT(request: NextRequest) {
       .eq('id', id)
       .select();
     
-    if (error) {
-      if (error.code === '42501') {
-        return NextResponse.json(
-          { error: "You don't have permission to update this data." },
-          { status: 403 }
-        );
-      }
-      throw error;
-    }
+    const errorResponse = handleAdminMutationError(error, 'update');
+    if (errorResponse) return errorResponse;
+    if (error) throw error;
 
-    if (!data || data.length === 0) {
-      return NextResponse.json(
-        { error: "You don't have permission to update this data." },
-        { status: 403 }
-      );
-    }
+    const emptyResultResponse = ensureAdminMutationResult(data, 'update');
+    if (emptyResultResponse) return emptyResultResponse;
 
     return NextResponse.json({
       message: 'Product updated successfully',
@@ -208,22 +203,12 @@ export async function DELETE(request: NextRequest) {
       .eq('id', parseInt(id))
       .select();
 
-    if (error) {
-      if (error.code === '42501') {
-        return NextResponse.json(
-          { error: "You don't have permission to delete this data." },
-          { status: 403 }
-        );
-      }
-      throw error;
-    }
+    const errorResponse = handleAdminMutationError(error, 'delete');
+    if (errorResponse) return errorResponse;
+    if (error) throw error;
 
-    if (!data || data.length === 0) {
-      return NextResponse.json(
-        { error: "You don't have permission to delete this data." },
-        { status: 403 }
-      );
-    }
+    const emptyResultResponse = ensureAdminMutationResult(data, 'delete');
+    if (emptyResultResponse) return emptyResultResponse;
 
     return NextResponse.json({
       message: 'Product deleted successfully'
