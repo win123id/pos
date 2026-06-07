@@ -1,3 +1,6 @@
+import { requireAdmin } from "@/lib/authz/require-admin";
+import { prepareSalePayload, SaleValidationError } from "@/lib/sales/service";
+import type { SaleWriteResult } from "@/lib/sales/types";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -6,6 +9,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const supabase = await createClient();
 
     // ✅ NEW
@@ -57,41 +63,49 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const body = await request.json();
     const supabase = await createClient();
 
-    const { customer_id, total_price, items } = body;
+    const preparedSale = await prepareSalePayload(supabase, {
+      customerId: body.customer_id,
+      items: body.items,
+    });
 
-    // update sale
-    await supabase
-      .from("sales")
-      .update({
-        customer_id,
-        total_price,
-      })
-      .eq("id", id);
+    const saleId = Number(id);
 
-    // delete old items
-    await supabase.from("sale_items").delete().eq("sale_id", id);
+    if (!Number.isInteger(saleId) || saleId <= 0) {
+      return NextResponse.json({ error: "Sale ID is required" }, { status: 400 });
+    }
 
-    // insert new items
-    const itemsToInsert = items.map((item: any) => ({
-      sale_id: id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      width: item.width,
-      height: item.height,
-      description: item.description,
-      item_total: item.item_total,
-      price_per_unit: item.product.price_per_unit,
-      cost_price: item.product.cost_price ?? null,
-    }));
+    const { data, error } = await supabase.rpc("update_sale_with_items", {
+      p_sale_id: saleId,
+      p_customer_id: preparedSale.customerId,
+      p_total_price: preparedSale.totalPrice,
+      p_items: preparedSale.items,
+    });
 
-    await supabase.from("sale_items").insert(itemsToInsert);
+    if (error) throw error;
 
-    return NextResponse.json({ success: true });
+    const result = data as SaleWriteResult | null;
+
+    if (!result) {
+      throw new Error("Sale write RPC returned no result");
+    }
+
+    return NextResponse.json({ success: true, data: result });
   } catch (err: any) {
+    if (err instanceof SaleValidationError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+
+    if (err?.message === "Sale not found") {
+      return NextResponse.json({ error: err.message }, { status: 404 });
+    }
+
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

@@ -1,3 +1,6 @@
+import { requireAdmin } from "@/lib/authz/require-admin";
+import { prepareSalePayload, SaleValidationError } from "@/lib/sales/service";
+import type { SaleWriteResult } from "@/lib/sales/types";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -5,6 +8,9 @@ const ITEMS_PER_PAGE = 10;
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     
@@ -96,57 +102,43 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const supabase = await createClient();
     const body = await request.json();
-    const { customer_id, items } = body;
+    const preparedSale = await prepareSalePayload(supabase, {
+      customerId: body.customer_id,
+      items: body.items,
+    });
 
-    if (!items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'At least one item is required' },
-        { status: 400 }
-      );
-    }
-
-    // Calculate total
-    const total = items.reduce((sum: number, item: any) => sum + item.item_total, 0);
-
-    // Create sale
-    const { data: saleData, error: saleError } = await supabase
-      .from('sales')
-      .insert({
-        total_price: total,
-        customer_id: customer_id || null
-      })
-      .select()
-      .single();
+    const { data: saleData, error: saleError } = await supabase.rpc(
+      "create_sale_with_items",
+      {
+        p_customer_id: preparedSale.customerId,
+        p_total_price: preparedSale.totalPrice,
+        p_items: preparedSale.items,
+      },
+    );
 
     if (saleError) throw saleError;
 
-    // Create sale items
-    const saleItemsToInsert = items.map((item: any) => ({
-      sale_id: saleData.id,
-      product_id: item.product_id,
-      quantity: item.quantity || null,
-      width: item.width || null,
-      height: item.height || null,
-      item_total: item.item_total,
-      description: item.description || null,
-      cost_price: item.product.cost_price || null,
-      price_per_unit: item.product.price_per_unit
-    }));
+    const result = saleData as SaleWriteResult | null;
 
-    const { error: itemsError } = await supabase
-      .from('sale_items')
-      .insert(saleItemsToInsert);
-
-    if (itemsError) throw itemsError;
+    if (!result) {
+      throw new Error("Sale write RPC returned no result");
+    }
 
     return NextResponse.json({
       message: 'Sale created successfully',
-      data: saleData
+      data: result
     }, { status: 201 });
 
   } catch (error: any) {
+    if (error instanceof SaleValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     console.error('Sales POST Error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to create sale' },
@@ -157,6 +149,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     

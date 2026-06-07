@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/authz/require-admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -5,6 +6,9 @@ const ITEMS_PER_PAGE = 9;
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     
@@ -42,6 +46,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const supabase = await createClient();
     const body = await request.json();
     
@@ -84,6 +91,9 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const supabase = await createClient();
     const body = await request.json();
     
@@ -149,6 +159,9 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     

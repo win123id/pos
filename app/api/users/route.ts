@@ -1,18 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/authz/require-admin'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
 
 export async function GET() {
   try {
+    const auth = await requireAdmin()
+    if (!auth.ok) return auth.response
+
     // Get all profiles
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
@@ -53,6 +47,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAdmin()
+    if (!auth.ok) return auth.response
+
     const { email, password, fullName, role } = await request.json();
 
     // Create user
@@ -85,6 +82,9 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const auth = await requireAdmin()
+    if (!auth.ok) return auth.response
+
     const { userId, fullName, role } = await request.json();
 
     // Update profiles table
@@ -106,6 +106,9 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const auth = await requireAdmin()
+    if (!auth.ok) return auth.response
+
     const { userId } = await request.json();
 
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
