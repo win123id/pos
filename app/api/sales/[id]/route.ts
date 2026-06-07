@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/authz/require-admin";
+import { getSaleById } from "@/lib/sales/get-sale-by-id";
 import { prepareSalePayload, SaleValidationError } from "@/lib/sales/service";
 import type { SaleWriteResult } from "@/lib/sales/types";
 import { createClient } from "@/lib/supabase/server";
@@ -24,18 +25,7 @@ export async function GET(
       );
     }
 
-    const { data, error } = await supabase
-      .from('sales')
-      .select(`
-        *,
-        customers(name, email, phone, address),
-        sale_items(
-          *,
-          products(id, name, type, price_per_unit, cost_price)
-        )
-      `)
-      .eq('id', id)
-      .single();
+    const { data, error } = await getSaleById(supabase, id);
 
     if (error) {
       if (error.code === 'PGRST116') {
