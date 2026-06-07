@@ -1,8 +1,5 @@
 import type { ProductType } from "@/lib/sales/types";
-
-export function roundUpToNearestThousand(amount: number) {
-  return amount % 1000 === 0 ? amount : Math.ceil(amount / 1000) * 1000;
-}
+import { ceilToNearestThousand } from "@/lib/utils/math";
 
 export function calculateSaleItemTotal(input: {
   productType: ProductType;
@@ -18,7 +15,7 @@ export function calculateSaleItemTotal(input: {
   const width = input.width ?? 0;
   const height = input.height ?? 0;
   const rawTotal = width * height * input.quantity * input.pricePerUnit;
-  return roundUpToNearestThousand(rawTotal);
+  return ceilToNearestThousand(rawTotal);
 }
 
 export function calculateSaleTotal(items: Array<{ item_total: number }>) {

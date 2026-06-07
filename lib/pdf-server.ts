@@ -3,10 +3,7 @@ import jsPDF from 'jspdf';
 import path from 'path';
 import fs from 'fs';
 
-// Helper function to round up to nearest 1000
-const roundUpToNearestThousand = (amount: number): number => {
-  return Math.ceil(amount / 1000) * 1000;
-};
+import { ceilToNearestThousand } from "@/lib/utils/math";
 
 interface SaleItem {
   id?: number;

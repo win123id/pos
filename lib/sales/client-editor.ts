@@ -24,9 +24,7 @@ export type SaleItemForm = {
   item_total: number;
 };
 
-export function roundToNearestThousand(amount: number) {
-  return amount % 1000 === 0 ? amount : Math.ceil(amount / 1000) * 1000;
-}
+import { ceilToNearestThousand } from "@/lib/utils/math";
 
 export function createEmptySaleItem(product: Product): SaleItemForm {
   return {
@@ -54,7 +52,7 @@ export function recalculateSaleItem(item: SaleItemForm): SaleItemForm {
 
     return {
       ...item,
-      item_total: roundToNearestThousand(rawTotal),
+      item_total: ceilToNearestThousand(rawTotal),
     };
   }
 
