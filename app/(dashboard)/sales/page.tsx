@@ -117,10 +117,6 @@ export default function SalesPage() {
       // Call server-side PDF generation API
       const response = await fetch(`/api/generate-pdf?saleId=${sale.id}&t=${Date.now()}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sale }),
       });
 
       if (!response.ok) {
