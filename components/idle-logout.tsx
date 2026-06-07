@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
+import { signOutClient } from "@/lib/session/sign-out";
 import { useEffect, useRef } from "react";
 
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -8,7 +8,6 @@ const CHECK_INTERVAL_MS = 30 * 1000;
 const LAST_ACTIVITY_KEY = "pos:last-activity-at";
 
 export function IdleLogout() {
-  const supabase = createClient();
   const isSigningOutRef = useRef(false);
 
   useEffect(() => {
@@ -28,8 +27,7 @@ export function IdleLogout() {
       }
 
       isSigningOutRef.current = true;
-      await supabase.auth.signOut();
-      window.location.href = "/auth/login?reason=idle";
+      await signOutClient({ reason: "idle" });
     };
 
     updateLastActivity();
@@ -74,7 +72,7 @@ export function IdleLogout() {
       window.removeEventListener("storage", handleStorage);
       window.clearInterval(intervalId);
     };
-  }, [supabase]);
+  }, []);
 
   return null;
 }

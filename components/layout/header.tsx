@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, Package, Users, Home, LogOut, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { signOutClient } from "@/lib/session/sign-out";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -17,11 +17,9 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname();
-  const supabase = createClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/auth/login";
+    await signOutClient();
   };
 
   return (

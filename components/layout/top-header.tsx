@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, LogOut, Sidebar, PanelLeftClose } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -17,40 +15,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface TopHeaderProps {
+  avatarUrl?: string | null;
+  displayName?: string | null;
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
+  onSignOut?: () => Promise<void> | void;
 }
 
-export function TopHeader({ isSidebarCollapsed = false, onToggleSidebar }: TopHeaderProps) {
+export function TopHeader({
+  avatarUrl = null,
+  displayName = null,
+  isSidebarCollapsed = false,
+  onToggleSidebar,
+  onSignOut,
+}: TopHeaderProps) {
   const router = useRouter();
-  const supabase = createClient();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url")
-        .eq("id", user.id)
-        .single();
-
-      setAvatarUrl(profile?.avatar_url ?? null);
-      setDisplayName(profile?.full_name ?? user.email ?? null);
-    };
-
-    loadProfile();
-  }, [supabase]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/auth/login";
+    await onSignOut?.();
   };
 
   return (

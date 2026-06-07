@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,6 @@ import {
   UserCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 
 
@@ -34,18 +33,23 @@ const navigation = [
 interface SidebarProps {
   className?: string;
   isCollapsed?: boolean;
+  userRole?: string | null;
   onCollapseChange?: (isCollapsed: boolean) => void;
+  onSignOut?: () => Promise<void> | void;
 }
 
-export function Sidebar({ className, isCollapsed = false, onCollapseChange }: SidebarProps) {
+export function Sidebar({
+  className,
+  isCollapsed = false,
+  userRole = null,
+  onCollapseChange,
+  onSignOut,
+}: SidebarProps) {
   const pathname = usePathname();
-  const supabase = createClient();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/auth/login";
+    await onSignOut?.();
   };
 
   const toggleCollapse = () => {
@@ -59,23 +63,6 @@ export function Sidebar({ className, isCollapsed = false, onCollapseChange }: Si
   const toggleMobile = () => {
     setIsMobileOpen(!isMobileOpen);
   };
-
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        
-        setUserRole(profile?.role || 'user');
-      }
-    };
-
-    fetchUserRole();
-  }, [supabase]);
 
   return (
     <>
