@@ -3,8 +3,6 @@ import jsPDF from 'jspdf';
 import path from 'path';
 import fs from 'fs';
 
-import { ceilToNearestThousand } from "@/lib/utils/math";
-
 interface SaleItem {
   id?: number;
   product_id: number;
@@ -34,7 +32,46 @@ interface Sale {
   sale_items?: SaleItem[];
 }
 
+interface InvoiceConfig {
+  companyName: string;
+  companyTagline: string;
+  companyContact: string;
+  bankName: string;
+  bankAccountNo: string;
+  bankAccountName: string;
+}
+
+function getRequiredInvoiceConfig(): InvoiceConfig {
+  const config = {
+    companyName: process.env.INVOICE_COMPANY_NAME,
+    companyTagline: process.env.INVOICE_COMPANY_TAGLINE,
+    companyContact: process.env.INVOICE_COMPANY_CONTACT,
+    bankName: process.env.INVOICE_BANK_NAME,
+    bankAccountNo: process.env.INVOICE_BANK_ACCOUNT_NO,
+    bankAccountName: process.env.INVOICE_BANK_ACCOUNT_NAME,
+  };
+
+  const missing = Object.entries(config)
+    .filter(([, value]) => !value || value.trim().length === 0)
+    .map(([key]) => key);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required invoice env vars: ${missing.join(", ")}`);
+  }
+
+  return {
+    companyName: config.companyName!,
+    companyTagline: config.companyTagline!,
+    companyContact: config.companyContact!,
+    bankName: config.bankName!,
+    bankAccountNo: config.bankAccountNo!,
+    bankAccountName: config.bankAccountName!,
+  };
+}
+
 export const generateSalePDF = async (sale: Sale): Promise<Uint8Array> => {
+  const invoiceConfig = getRequiredInvoiceConfig();
+
   // Create a new jsPDF instance
   const pdf = new jsPDF();
   
@@ -80,13 +117,13 @@ export const generateSalePDF = async (sale: Sale): Promise<Uint8Array> => {
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    pdf.text('YOUR COMPANY', margin, yPosition + 15);
+    pdf.text(invoiceConfig.companyName, margin, yPosition + 15);
   }
   
   // Company info
   const companyInfoX = margin + 45;
-  pdf.text('Digital Printing Indoor - Outdoor', companyInfoX, yPosition + 8);
-  pdf.text('Offset & Media Promotion | Email: win123id@gmail.com', companyInfoX, yPosition + 12);
+  pdf.text(invoiceConfig.companyTagline, companyInfoX, yPosition + 8);
+  pdf.text(invoiceConfig.companyContact, companyInfoX, yPosition + 12);
   
   yPosition += 35;
   
@@ -265,11 +302,11 @@ export const generateSalePDF = async (sale: Sale): Promise<Uint8Array> => {
   pdf.setFont('helvetica', 'normal');
   pdf.text('Payment Details:', margin, yPosition);
   yPosition += 5;
-  pdf.text('Bank: BCA', margin, yPosition);
+  pdf.text(`Bank: ${invoiceConfig.bankName}`, margin, yPosition);
   yPosition += 5;
-  pdf.text('Account No: 5270577565', margin, yPosition);
+  pdf.text(`Account No: ${invoiceConfig.bankAccountNo}`, margin, yPosition);
   yPosition += 5;
-  pdf.text('Account Name: Ricky Iswanto', margin, yPosition);
+  pdf.text(`Account Name: ${invoiceConfig.bankAccountName}`, margin, yPosition);
   
   // Footer
   pdf.setFontSize(8);

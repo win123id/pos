@@ -52,12 +52,19 @@ Create `.env.local` with:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+INVOICE_COMPANY_NAME=your_company_name
+INVOICE_COMPANY_TAGLINE=your_company_tagline
+INVOICE_COMPANY_CONTACT=your_company_contact_line
+INVOICE_BANK_NAME=your_bank_name
+INVOICE_BANK_ACCOUNT_NO=your_bank_account_number
+INVOICE_BANK_ACCOUNT_NAME=your_bank_account_name
 ```
 
 ### Notes
 
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is used by the browser, server, and middleware Supabase clients.
 - `SUPABASE_SERVICE_ROLE_KEY` is used for admin user-management operations and must never be exposed to the client.
+- `INVOICE_COMPANY_NAME`, `INVOICE_COMPANY_TAGLINE`, `INVOICE_COMPANY_CONTACT`, `INVOICE_BANK_NAME`, `INVOICE_BANK_ACCOUNT_NO`, and `INVOICE_BANK_ACCOUNT_NAME` are required server-only invoice PDF settings.
 
 ## Local Development
 

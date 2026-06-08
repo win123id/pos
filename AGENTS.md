@@ -76,6 +76,12 @@ Required:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+INVOICE_COMPANY_NAME=
+INVOICE_COMPANY_TAGLINE=
+INVOICE_COMPANY_CONTACT=
+INVOICE_BANK_NAME=
+INVOICE_BANK_ACCOUNT_NO=
+INVOICE_BANK_ACCOUNT_NAME=
 ```
 
 ### Usage
@@ -83,6 +89,12 @@ SUPABASE_SERVICE_ROLE_KEY=
 - `NEXT_PUBLIC_SUPABASE_URL`: shared Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: used by browser, server, and middleware Supabase clients
 - `SUPABASE_SERVICE_ROLE_KEY`: used only for server-side admin operations
+- `INVOICE_COMPANY_NAME`: company name shown in invoice PDFs and text-logo fallback
+- `INVOICE_COMPANY_TAGLINE`: company tagline shown in invoice PDFs
+- `INVOICE_COMPANY_CONTACT`: company contact line shown in invoice PDFs
+- `INVOICE_BANK_NAME`: bank name shown in invoice PDF payment details
+- `INVOICE_BANK_ACCOUNT_NO`: bank account number shown in invoice PDF payment details
+- `INVOICE_BANK_ACCOUNT_NAME`: bank account name shown in invoice PDF payment details
 
 ## Data Model
 
