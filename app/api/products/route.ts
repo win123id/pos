@@ -1,49 +1,108 @@
-import {
-  ensureAdminMutationResult,
-  handleAdminMutationError,
-} from "@/lib/api/admin-mutation";
-import { getPage, getRange, getTotalPages } from "@/lib/api/pagination";
-import { requireAdmin } from "@/lib/authz/require-admin";
+import { withAdminAuth, handleAdminError, ensureAdminResult } from "@/lib/api/admin-route";
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_ITEMS_PER_PAGE, getPage } from "@/lib/api/pagination";
+import { ValidationError, validateName, validateType, validatePrice, validateId } from "@/lib/api/validation";
 import { NextRequest, NextResponse } from "next/server";
 
-const ITEMS_PER_PAGE = 10;
+interface Product {
+  id: number;
+  name: string;
+  type: "size" | "quantity";
+  price_per_unit: number;
+  cost_price?: number | null;
+  created_at: string;
+}
+
+async function getAllProducts(page: number, perPage: number) {
+  const supabase = await createClient();
+  const { from, to } = { from: (page - 1) * perPage, to: page * perPage - 1 };
+
+  const { count } = await supabase
+    .from("products")
+    .select("*", { count: "exact", head: true });
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    throw new Error(error.message || "Failed to fetch products");
+  }
+
+  return { data: (data as Product[]) || [], totalCount: count || 0 };
+}
+
+async function createProduct(data: Partial<Product>) {
+  const supabase = await createClient();
+
+  const { data: created, error } = await supabase
+    .from("products")
+    .insert(data)
+    .select();
+
+  if (error) {
+    throw new Error(error.message || "Failed to create product");
+  }
+
+  return created;
+}
+
+async function updateProduct(id: number, data: Partial<Product>) {
+  const supabase = await createClient();
+
+  const { data: updated, error } = await supabase
+    .from("products")
+    .update(data)
+    .eq("id", id)
+    .select();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(error.message || "Failed to update product");
+  }
+
+  return updated;
+}
+
+async function deleteProduct(id: number) {
+  const supabase = await createClient();
+
+  const { data: deleted, error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id)
+    .select();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(error.message || "Failed to delete product");
+  }
+
+  return deleted;
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
-    if (!auth.ok) return auth.response;
+    const auth = await withAdminAuth();
+    if (!auth.ok) {
+      return auth.response;
+    }
 
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    const page = getPage(searchParams);
-    const { from, to } = getRange(page, ITEMS_PER_PAGE);
+    const page = getPage(request);
+    const { data, totalCount } = await getAllProducts(page, DEFAULT_ITEMS_PER_PAGE);
 
-    // Get total count
-    const { count } = await supabase
-      .from('products')
-      .select('*', { count: 'exact', head: true });
-
-    // Fetch paginated products
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) throw error;
-    
     return NextResponse.json({
-      data: data || [],
-      totalCount: count || 0,
+      data,
+      totalCount,
       currentPage: page,
-      totalPages: getTotalPages(count, ITEMS_PER_PAGE)
+      totalPages: Math.ceil((totalCount || 0) / DEFAULT_ITEMS_PER_PAGE),
     });
-
   } catch (error: any) {
-    console.error('Products GET Error:', error);
+    console.error("Products GET Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch products' },
+      { error: error.message || "Failed to fetch products" },
       { status: 500 }
     );
   }
@@ -51,58 +110,37 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
-    if (!auth.ok) return auth.response;
+    const auth = await withAdminAuth();
+    if (!auth.ok) {
+      return auth.response;
+    }
 
-    const supabase = await createClient();
     const body = await request.json();
-    
-    const { name, type, price_per_unit, cost_price } = body;
+    const name = validateName(body?.name, "Product name");
+    const type = validateType(body?.type, ["size", "quantity"], "Product type");
+    const price_per_unit = validatePrice(body?.price_per_unit, "Selling price");
 
-    if (!name) {
-      return NextResponse.json(
-        { error: 'Product name is required' },
-        { status: 400 }
-      );
-    }
+    const cost_price =
+      body?.cost_price != null ? validatePrice(body.cost_price, "Cost price") : null;
 
-    if (!type || !['size', 'quantity'].includes(type)) {
-      return NextResponse.json(
-        { error: 'Valid product type is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!price_per_unit || isNaN(parseFloat(price_per_unit)) || parseFloat(price_per_unit) <= 0) {
-      return NextResponse.json(
-        { error: 'Valid selling price is required' },
-        { status: 400 }
-      );
-    }
-
-    const submitData = {
+    const data = await createProduct({
       name,
       type,
-      price_per_unit: parseFloat(price_per_unit),
-      cost_price: cost_price ? parseFloat(cost_price) : null
-    };
-
-    const { error } = await supabase
-      .from('products')
-      .insert(submitData)
-      .select();
-
-    if (error) throw error;
+      price_per_unit,
+      cost_price,
+    });
 
     return NextResponse.json(
-      { message: 'Product created successfully' },
+      { message: "Product created successfully", data },
       { status: 201 }
     );
-
   } catch (error: any) {
-    console.error('Products POST Error:', error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    console.error("Products POST Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create product' },
+      { error: error.message || "Failed to create product" },
       { status: 500 }
     );
   }
@@ -110,71 +148,50 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
-    if (!auth.ok) return auth.response;
+    const auth = await withAdminAuth();
+    if (!auth.ok) {
+      return auth.response;
+    }
 
-    const supabase = await createClient();
     const body = await request.json();
-    
-    const { id, name, type, price_per_unit, cost_price } = body;
+    const id = validateId(body?.id);
+    const name = validateName(body?.name, "Product name");
+    const type = validateType(body?.type, ["size", "quantity"], "Product type");
+    const price_per_unit = validatePrice(body?.price_per_unit, "Selling price");
 
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Product ID is required' },
-        { status: 400 }
-      );
-    }
+    const cost_price =
+      body?.cost_price != null ? validatePrice(body.cost_price, "Cost price") : null;
 
-    if (!name) {
-      return NextResponse.json(
-        { error: 'Product name is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!type || !['size', 'quantity'].includes(type)) {
-      return NextResponse.json(
-        { error: 'Valid product type is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!price_per_unit || isNaN(parseFloat(price_per_unit)) || parseFloat(price_per_unit) <= 0) {
-      return NextResponse.json(
-        { error: 'Valid selling price is required' },
-        { status: 400 }
-      );
-    }
-
-    const submitData = {
+    const data = await updateProduct(id, {
       name,
       type,
-      price_per_unit: parseFloat(price_per_unit),
-      cost_price: cost_price ? parseFloat(cost_price) : null
-    };
-
-    const { data, error } = await supabase
-      .from('products')
-      .update(submitData)
-      .eq('id', id)
-      .select();
-    
-    const errorResponse = handleAdminMutationError(error, 'update');
-    if (errorResponse) return errorResponse;
-    if (error) throw error;
-
-    const emptyResultResponse = ensureAdminMutationResult(data, 'update');
-    if (emptyResultResponse) return emptyResultResponse;
-
-    return NextResponse.json({
-      message: 'Product updated successfully',
-      data: data[0]
+      price_per_unit,
+      cost_price,
     });
 
+    const errorResponse = handleAdminError(null, "update");
+    if (errorResponse) {
+      return NextResponse.json(errorResponse, { status: 403 });
+    }
+
+    const emptyResponse = ensureAdminResult(data, "update");
+    if (emptyResponse) {
+      return NextResponse.json(emptyResponse, { status: 403 });
+    }
+
+    const updatedProduct = data![0];
+
+    return NextResponse.json({
+      message: "Product updated successfully",
+      data: updatedProduct,
+    });
   } catch (error: any) {
-    console.error('Products PUT Error:', error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    console.error("Products PUT Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to update product' },
+      { error: error.message || "Failed to update product" },
       { status: 500 }
     );
   }
@@ -182,43 +199,42 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
-    if (!auth.ok) return auth.response;
-
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Product ID is required' },
-        { status: 400 }
-      );
+    const auth = await withAdminAuth();
+    if (!auth.ok) {
+      return auth.response;
     }
 
-    const { data, error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', parseInt(id))
-      .select();
+    const { searchParams } = new URL(request.url);
+    const id = parseInt(searchParams.get("id") || "0", 10);
 
-    const errorResponse = handleAdminMutationError(error, 'delete');
-    if (errorResponse) return errorResponse;
-    if (error) throw error;
+    if (!isPositiveInteger(id)) {
+      return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+    }
 
-    const emptyResultResponse = ensureAdminMutationResult(data, 'delete');
-    if (emptyResultResponse) return emptyResultResponse;
+    const data = await deleteProduct(id);
+
+    const errorResponse = handleAdminError(null, "delete");
+    if (errorResponse) {
+      return NextResponse.json(errorResponse, { status: 403 });
+    }
+
+    const emptyResponse = ensureAdminResult(data, "delete");
+    if (emptyResponse) {
+      return NextResponse.json(emptyResponse, { status: 403 });
+    }
 
     return NextResponse.json({
-      message: 'Product deleted successfully'
+      message: "Product deleted successfully",
     });
-
   } catch (error: any) {
-    console.error('Products DELETE Error:', error);
+    console.error("Products DELETE Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to delete product' },
+      { error: error.message || "Failed to delete product" },
       { status: 500 }
     );
   }
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
 }
