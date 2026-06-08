@@ -9,16 +9,8 @@ export function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
 }
 
-export function isNonNegativeInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0;
-}
-
 export function isPositiveNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
-export function isString(value: unknown): value is string {
-  return typeof value === "string";
 }
 
 export function isNonEmptyString(value: unknown): value is string {
@@ -70,11 +62,4 @@ export function validatePhone(value: unknown): string | null {
     return null;
   }
   return value.trim();
-}
-
-export function validatePassword(value: unknown): string {
-  if (!isNonEmptyString(value)) {
-    throw new ValidationError("Password is required");
-  }
-  return value;
 }

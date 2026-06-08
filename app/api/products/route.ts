@@ -1,7 +1,14 @@
-import { withAdminAuth, handleAdminError, ensureAdminResult } from "@/lib/api/admin-route";
-import { createClient } from "@/lib/supabase/server";
+import { ensureAdminResult, withAdminAuth } from "@/lib/api/admin-route";
+import { createCrudService } from "@/lib/api/crud";
 import { DEFAULT_ITEMS_PER_PAGE, getPage } from "@/lib/api/pagination";
-import { ValidationError, validateName, validateType, validatePrice, validateId } from "@/lib/api/validation";
+import {
+  ValidationError,
+  isPositiveInteger,
+  validateId,
+  validateName,
+  validatePrice,
+  validateType,
+} from "@/lib/api/validation";
 import { NextRequest, NextResponse } from "next/server";
 
 interface Product {
@@ -13,75 +20,11 @@ interface Product {
   created_at: string;
 }
 
-async function getAllProducts(page: number, perPage: number) {
-  const supabase = await createClient();
-  const { from, to } = { from: (page - 1) * perPage, to: page * perPage - 1 };
-
-  const { count } = await supabase
-    .from("products")
-    .select("*", { count: "exact", head: true });
-
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  if (error) {
-    throw new Error(error.message || "Failed to fetch products");
-  }
-
-  return { data: (data as Product[]) || [], totalCount: count || 0 };
-}
-
-async function createProduct(data: Partial<Product>) {
-  const supabase = await createClient();
-
-  const { data: created, error } = await supabase
-    .from("products")
-    .insert(data)
-    .select();
-
-  if (error) {
-    throw new Error(error.message || "Failed to create product");
-  }
-
-  return created;
-}
-
-async function updateProduct(id: number, data: Partial<Product>) {
-  const supabase = await createClient();
-
-  const { data: updated, error } = await supabase
-    .from("products")
-    .update(data)
-    .eq("id", id)
-    .select();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw new Error(error.message || "Failed to update product");
-  }
-
-  return updated;
-}
-
-async function deleteProduct(id: number) {
-  const supabase = await createClient();
-
-  const { data: deleted, error } = await supabase
-    .from("products")
-    .delete()
-    .eq("id", id)
-    .select();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw new Error(error.message || "Failed to delete product");
-  }
-
-  return deleted;
-}
+const products = createCrudService<
+  Product,
+  Pick<Product, "name" | "type" | "price_per_unit" | "cost_price">,
+  Pick<Product, "name" | "type" | "price_per_unit" | "cost_price">
+>("products", "products");
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     const page = getPage(request);
-    const { data, totalCount } = await getAllProducts(page, DEFAULT_ITEMS_PER_PAGE);
+    const { data, totalCount } = await products.list(page, DEFAULT_ITEMS_PER_PAGE);
 
     return NextResponse.json({
       data,
@@ -123,7 +66,7 @@ export async function POST(request: NextRequest) {
     const cost_price =
       body?.cost_price != null ? validatePrice(body.cost_price, "Cost price") : null;
 
-    const data = await createProduct({
+    const data = await products.create({
       name,
       type,
       price_per_unit,
@@ -162,17 +105,12 @@ export async function PUT(request: NextRequest) {
     const cost_price =
       body?.cost_price != null ? validatePrice(body.cost_price, "Cost price") : null;
 
-    const data = await updateProduct(id, {
+    const data = await products.update(id, {
       name,
       type,
       price_per_unit,
       cost_price,
     });
-
-    const errorResponse = handleAdminError(null, "update");
-    if (errorResponse) {
-      return NextResponse.json(errorResponse, { status: 403 });
-    }
 
     const emptyResponse = ensureAdminResult(data, "update");
     if (emptyResponse) {
@@ -211,12 +149,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
     }
 
-    const data = await deleteProduct(id);
-
-    const errorResponse = handleAdminError(null, "delete");
-    if (errorResponse) {
-      return NextResponse.json(errorResponse, { status: 403 });
-    }
+    const data = await products.delete(id);
 
     const emptyResponse = ensureAdminResult(data, "delete");
     if (emptyResponse) {
@@ -233,8 +166,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function isPositiveInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value > 0;
 }

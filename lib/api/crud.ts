@@ -1,22 +1,35 @@
+import { getRange } from "@/lib/api/pagination";
 import { createClient } from "@/lib/supabase/server";
 
-export interface CrudService<T> {
-  getAll(page: number, perPage: number): Promise<{ data: T[]; totalCount: number }>;
-  getById(id: number): Promise<T | null>;
-  create(data: Partial<T>): Promise<T[] | null>;
-  update(id: number, data: Partial<T>): Promise<T[] | null>;
-  delete(id: number): Promise<T[] | null>;
+export interface CrudListResult<TRecord> {
+  data: TRecord[];
+  totalCount: number;
 }
 
-export function createCrudService<T extends { id: number }>(tableName: string): CrudService<T> {
+export interface CrudService<TRecord, TCreate = Partial<TRecord>, TUpdate = Partial<TRecord>> {
+  list(page: number, perPage: number): Promise<CrudListResult<TRecord>>;
+  create(data: TCreate): Promise<TRecord[]>;
+  update(id: number, data: TUpdate): Promise<TRecord[]>;
+  delete(id: number): Promise<TRecord[]>;
+}
+
+export function createCrudService<
+  TRecord extends { id: number },
+  TCreate = Partial<TRecord>,
+  TUpdate = Partial<TRecord>,
+>(tableName: string, entityName: string): CrudService<TRecord, TCreate, TUpdate> {
   return {
-    async getAll(page, perPage) {
+    async list(page, perPage) {
       const supabase = await createClient();
       const { from, to } = getRange(page, perPage);
 
-      const { count } = await supabase
+      const { count, error: countError } = await supabase
         .from(tableName)
         .select("*", { count: "exact", head: true });
+
+      if (countError) {
+        throw new Error(countError.message || `Failed to fetch ${entityName}`);
+      }
 
       const { data, error } = await supabase
         .from(tableName)
@@ -25,27 +38,10 @@ export function createCrudService<T extends { id: number }>(tableName: string): 
         .range(from, to);
 
       if (error) {
-        throw new Error(error.message || `Failed to fetch ${tableName}`);
+        throw new Error(error.message || `Failed to fetch ${entityName}`);
       }
 
-      return { data: data || [], totalCount: count || 0 };
-    },
-
-    async getById(id) {
-      const supabase = await createClient();
-
-      const { data, error } = await supabase
-        .from(tableName)
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        if (error.code === "PGRST116") return null;
-        throw new Error(error.message || `Failed to fetch ${tableName}`);
-      }
-
-      return data;
+      return { data: (data as TRecord[]) || [], totalCount: count || 0 };
     },
 
     async create(data) {
@@ -57,10 +53,10 @@ export function createCrudService<T extends { id: number }>(tableName: string): 
         .select();
 
       if (error) {
-        throw new Error(error.message || `Failed to create ${tableName}`);
+        throw new Error(error.message || `Failed to create ${entityName}`);
       }
 
-      return created;
+      return (created as TRecord[]) || [];
     },
 
     async update(id, data) {
@@ -70,15 +66,13 @@ export function createCrudService<T extends { id: number }>(tableName: string): 
         .from(tableName)
         .update(data)
         .eq("id", id)
-        .select()
-        .single();
+        .select();
 
       if (error) {
-        if (error.code === "PGRST116") return null;
-        throw new Error(error.message || `Failed to update ${tableName}`);
+        throw new Error(error.message || `Failed to update ${entityName}`);
       }
 
-      return updated;
+      return (updated as TRecord[]) || [];
     },
 
     async delete(id) {
@@ -88,22 +82,13 @@ export function createCrudService<T extends { id: number }>(tableName: string): 
         .from(tableName)
         .delete()
         .eq("id", id)
-        .select()
-        .single();
+        .select();
 
       if (error) {
-        if (error.code === "PGRST116") return null;
-        throw new Error(error.message || `Failed to delete ${tableName}`);
+        throw new Error(error.message || `Failed to delete ${entityName}`);
       }
 
-      return deleted;
+      return (deleted as TRecord[]) || [];
     },
-  };
-}
-
-function getRange(page: number, perPage: number) {
-  return {
-    from: (page - 1) * perPage,
-    to: page * perPage - 1,
   };
 }

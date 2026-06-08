@@ -1,7 +1,14 @@
-import { withAdminAuth, handleAdminError, ensureAdminResult } from "@/lib/api/admin-route";
-import { createClient } from "@/lib/supabase/server";
+import { ensureAdminResult, withAdminAuth } from "@/lib/api/admin-route";
+import { createCrudService } from "@/lib/api/crud";
 import { DEFAULT_ITEMS_PER_PAGE, getPage } from "@/lib/api/pagination";
-import { ValidationError, validateName, validateEmail, validatePhone, validateId } from "@/lib/api/validation";
+import {
+  ValidationError,
+  isPositiveInteger,
+  validateEmail,
+  validateId,
+  validateName,
+  validatePhone,
+} from "@/lib/api/validation";
 import { NextRequest, NextResponse } from "next/server";
 
 interface Customer {
@@ -13,75 +20,11 @@ interface Customer {
   created_at: string;
 }
 
-async function getAllCustomers(page: number, perPage: number) {
-  const supabase = await createClient();
-  const { from, to } = { from: (page - 1) * perPage, to: page * perPage - 1 };
-
-  const { count } = await supabase
-    .from("customers")
-    .select("*", { count: "exact", head: true });
-
-  const { data, error } = await supabase
-    .from("customers")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  if (error) {
-    throw new Error(error.message || "Failed to fetch customers");
-  }
-
-  return { data: (data as Customer[]) || [], totalCount: count || 0 };
-}
-
-async function createCustomer(data: Partial<Customer>) {
-  const supabase = await createClient();
-
-  const { data: created, error } = await supabase
-    .from("customers")
-    .insert(data)
-    .select();
-
-  if (error) {
-    throw new Error(error.message || "Failed to create customer");
-  }
-
-  return created;
-}
-
-async function updateCustomer(id: number, data: Partial<Customer>) {
-  const supabase = await createClient();
-
-  const { data: updated, error } = await supabase
-    .from("customers")
-    .update(data)
-    .eq("id", id)
-    .select();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw new Error(error.message || "Failed to update customer");
-  }
-
-  return updated;
-}
-
-async function deleteCustomer(id: number) {
-  const supabase = await createClient();
-
-  const { data: deleted, error } = await supabase
-    .from("customers")
-    .delete()
-    .eq("id", id)
-    .select();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw new Error(error.message || "Failed to delete customer");
-  }
-
-  return deleted;
-}
+const customers = createCrudService<
+  Customer,
+  Pick<Customer, "name" | "email" | "phone" | "address">,
+  Pick<Customer, "name" | "email" | "phone" | "address">
+>("customers", "customers");
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     const page = getPage(request);
-    const { data, totalCount } = await getAllCustomers(page, DEFAULT_ITEMS_PER_PAGE);
+    const { data, totalCount } = await customers.list(page, DEFAULT_ITEMS_PER_PAGE);
 
     return NextResponse.json({
       data,
@@ -123,7 +66,7 @@ export async function POST(request: NextRequest) {
       ? body.address.trim()
       : null;
 
-    const data = await createCustomer({
+    const data = await customers.create({
       name,
       email,
       phone,
@@ -162,17 +105,12 @@ export async function PUT(request: NextRequest) {
       ? body.address.trim()
       : null;
 
-    const data = await updateCustomer(id, {
+    const data = await customers.update(id, {
       name,
       email,
       phone,
       address,
     });
-
-    const errorResponse = handleAdminError(null, "update");
-    if (errorResponse) {
-      return NextResponse.json(errorResponse, { status: 403 });
-    }
 
     const emptyResponse = ensureAdminResult(data, "update");
     if (emptyResponse) {
@@ -211,12 +149,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Customer ID is required" }, { status: 400 });
     }
 
-    const data = await deleteCustomer(id);
-
-    const errorResponse = handleAdminError(null, "delete");
-    if (errorResponse) {
-      return NextResponse.json(errorResponse, { status: 403 });
-    }
+    const data = await customers.delete(id);
 
     const emptyResponse = ensureAdminResult(data, "delete");
     if (emptyResponse) {
@@ -233,8 +166,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function isPositiveInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value > 0;
 }

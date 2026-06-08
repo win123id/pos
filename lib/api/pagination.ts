@@ -15,8 +15,4 @@ export function getRange(page: number, perPage: number = DEFAULT_ITEMS_PER_PAGE)
   };
 }
 
-export function getTotalPages(count: number | null, perPage: number = DEFAULT_ITEMS_PER_PAGE) {
-  return Math.ceil((count || 0) / perPage);
-}
-
 export { DEFAULT_ITEMS_PER_PAGE };

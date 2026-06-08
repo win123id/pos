@@ -15,13 +15,6 @@ export function forbiddenResponse(action: string) {
   };
 }
 
-export function handleAdminError(error: { code?: string } | null, action: string) {
-  if (error?.code === "42501") {
-    return forbiddenResponse(action);
-  }
-  return null;
-}
-
 export function ensureAdminResult<T>(data: T[] | null, action: string) {
   if (!data || data.length === 0) {
     return forbiddenResponse(action);
