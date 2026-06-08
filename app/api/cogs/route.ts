@@ -5,6 +5,27 @@ import { NextRequest, NextResponse } from "next/server";
 
 type ProductType = "size" | "quantity";
 
+type MaybeArray<T> = T | T[];
+
+interface ProductJoin {
+  name: string;
+  type: ProductType;
+}
+
+interface ProductTypeJoin {
+  type: ProductType;
+}
+
+interface CustomerJoin {
+  name: string | null;
+}
+
+interface SaleJoin {
+  id: number;
+  created_at: string;
+  customers: MaybeArray<CustomerJoin> | null;
+}
+
 interface CogsItemJoinRow {
   id: number;
   sale_id: number;
@@ -16,17 +37,8 @@ interface CogsItemJoinRow {
   item_total: number | null;
   cost_price: number | null;
   price_per_unit: number | null;
-  products: Array<{
-    name: string;
-    type: ProductType;
-  }>;
-  sales: Array<{
-    id: number;
-    created_at: string;
-    customers: Array<{
-      name: string | null;
-    }>;
-  }>;
+  products: MaybeArray<ProductJoin>;
+  sales: MaybeArray<SaleJoin>;
 }
 
 interface CogsItemMetricsInput {
@@ -65,9 +77,7 @@ interface CogsTotalsJoinRow {
   height: number | null;
   item_total: number | null;
   cost_price: number | null;
-  products: Array<{
-    type: ProductType;
-  }>;
+  products: MaybeArray<ProductTypeJoin>;
 }
 
 interface CogsTotalsRow extends CogsItemMetricsInput {
@@ -141,9 +151,17 @@ function calculateItemMetrics(
   };
 }
 
+function firstJoined<T>(value: MaybeArray<T> | null | undefined): T | null {
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+
+  return value || null;
+}
+
 function toCogsItemRow(item: CogsItemJoinRow): CogsItemRow | null {
-  const product = item.products[0];
-  const sale = item.sales[0];
+  const product = firstJoined(item.products);
+  const sale = firstJoined(item.sales);
 
   if (!product || !sale) {
     return null;
@@ -164,13 +182,13 @@ function toCogsItemRow(item: CogsItemJoinRow): CogsItemRow | null {
     sales: {
       id: sale.id,
       created_at: sale.created_at,
-      customers: sale.customers[0] || null,
+      customers: firstJoined(sale.customers),
     },
   };
 }
 
 function toCogsTotalsRow(item: CogsTotalsJoinRow): CogsTotalsRow | null {
-  const product = item.products[0];
+  const product = firstJoined(item.products);
 
   if (!product) {
     return null;
